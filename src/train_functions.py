@@ -22,24 +22,53 @@ def read_data(csv_files_paths: list[str]) -> pd.DataFrame:
 
     for csv_file_path in csv_files_paths:
         current_data = pd.read_csv(csv_file_path)
-        current_data = current_data.dropna().reset_index(drop=True)
-
         whole_data = pd.concat([whole_data, current_data], ignore_index=True)
-
-    whole_data = whole_data.dropna().reset_index(drop=True)
 
     return whole_data
 
 
+def preprocess(data: pd.DataFrame,
+               feature_column_names: list[str],
+               ) -> pd.DataFrame:
+
+    data_copy = data.copy()
+    data_reduced = data_copy[feature_column_names]
+
+    # Find all duplicated rows (including all occurrences of duplicates)
+    duplicated_mask = data_reduced.duplicated(keep=False)
+
+    data_non_duplicated = data_copy[~duplicated_mask]
+    data_non_duplicated = data_non_duplicated.reset_index(drop=True)
+
+    data_non_duplicated_non_na = data_non_duplicated.dropna().reset_index(drop=True)
+
+    return data_non_duplicated_non_na
+
+
 def train_test_split(data: pd.DataFrame,
-                     frac_train: float) -> pd.DataFrame:
-    data['train_or_test'] = None
+                     frac_train: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Split the data into train and test data
+    :param data: dataframe to be split
+    :param frac_train: fraction of the data to be used for training
+    :return: train_data, test_data
+    """
+
+    train_data = data.sample(frac=frac_train, random_state=42)
+    test_data = data.drop(train_data.index)
+
+    return train_data, test_data
+
+
+def train_valid_split(data: pd.DataFrame,
+                      frac_train: float) -> pd.DataFrame:
+    data['train_or_valid'] = None
     # put random values in the column select train with 0.9 probability
 
     for i, row in data.iterrows():
-        data.loc[i, 'train_or_test'] = 'train' if random.random() < frac_train else 'test'
+        data.loc[i, 'train_or_valid'] = 'train' if random.random() < frac_train else 'valid'
 
-    # put train_or_test column at the beginning of the dataframe
+    # put train_or_valid column at the beginning of the dataframe
     cols = data.columns.tolist()
     cols = cols[-1:] + cols[:-1]
     data = data[cols]
@@ -52,10 +81,10 @@ def lazy_fit(data: pd.DataFrame,
              target_column_name: str,
              prediction_type: str,
              ) -> tuple[dict, pd.DataFrame]:
-    x_train, y_train = (data[data['train_or_test'] == 'train'][feature_column_names],
-                        data[data['train_or_test'] == 'train'][target_column_name])
-    x_test, y_test = (data[data['train_or_test'] == 'test'][feature_column_names],
-                      data[data['train_or_test'] == 'test'][target_column_name])
+    x_train, y_train = (data[data['train_or_valid'] == 'train'][feature_column_names],
+                        data[data['train_or_valid'] == 'train'][target_column_name])
+    x_valid, y_valid = (data[data['train_or_valid'] == 'valid'][feature_column_names],
+                        data[data['train_or_valid'] == 'valid'][target_column_name])
 
     if prediction_type == 'classification':
         lazy = LazyClassifier(verbose=0, ignore_warnings=False, custom_metric=None)
@@ -66,7 +95,7 @@ def lazy_fit(data: pd.DataFrame,
     else:
         raise ValueError('prediction_type should be either "classification" or "regression"')
 
-    lazy_scores, lazy_preds = lazy.fit(x_train, x_test, y_train, y_test)
+    lazy_scores, lazy_preds = lazy.fit(x_train, x_valid, y_train, y_valid)
 
     return lazy.models, lazy_scores
 
@@ -74,13 +103,13 @@ def lazy_fit(data: pd.DataFrame,
 def get_comparison_df_for_base_models(base_models_dict: dict,
                                       base_scores_df: pd.DataFrame,
                                       train_data: pd.DataFrame,
-                                      test_data: pd.DataFrame,
+                                      valid_data: pd.DataFrame,
                                       feature_column_names: list[str],
                                       target_column_name: str
                                       ) -> pd.DataFrame:
     models_comparison_df = pd.DataFrame(columns=['Model', 'Adjusted R-Squared', 'R-Squared',
-                                                 'Train_RMSE', 'Test_RMSE',
-                                                 'Train_MAPE', 'Test_MAPE', 'Time Taken'])
+                                                 'Train_RMSE', 'Valid_RMSE',
+                                                 'Train_MAPE', 'Valid_MAPE', 'Time Taken'])
 
     for model_name, model in base_models_dict.items():
         # predict the train data
@@ -89,11 +118,11 @@ def get_comparison_df_for_base_models(base_models_dict: dict,
                                    train_data[feature_column_names],
                                    train_data[target_column_name]))
 
-        # predict the test data
-        test_preds, test_mse, test_rmse, test_mae, test_mape = (
+        # predict the valid data
+        valid_preds, valid_mse, valid_rmse, valid_mae, valid_mape = (
             predict_set_with_model(model,
-                                   test_data[feature_column_names],
-                                   test_data[target_column_name]))
+                                   valid_data[feature_column_names],
+                                   valid_data[target_column_name]))
 
         adjust_r2 = base_scores_df.loc[model_name]['Adjusted R-Squared']
         r2 = base_scores_df.loc[model_name]['R-Squared']
@@ -103,15 +132,15 @@ def get_comparison_df_for_base_models(base_models_dict: dict,
                         'Adjusted R-Squared': adjust_r2,
                         'R-Squared': r2,
                         'Train_RMSE': train_rmse,
-                        'Test_RMSE': test_rmse,
+                        'Valid_RMSE': valid_rmse,
                         'Train_MAPE': train_mape,
-                        'Test_MAPE': test_mape,
+                        'Valid_MAPE': valid_mape,
                         'Time Taken': time_taken}
 
         models_comparison_df.loc[len(models_comparison_df)] = new_row_dict
 
     models_comparison_df = models_comparison_df.sort_values(by=['Adjusted R-Squared',
-                                                                'Train_RMSE', 'Test_RMSE',
+                                                                'Train_RMSE', 'Valid_RMSE',
                                                                 'Time Taken'],
                                                             ascending=False)
     models_comparison_df.reset_index(drop=True, inplace=True)
@@ -176,7 +205,6 @@ def create_meta_learner_data(base_data: pd.DataFrame,
                              best_base_models_dict: dict[str, tuple],
                              threshold_diff_percent: float
                              ) -> tuple[pd.DataFrame, list[str], str]:
-
     meta_data = base_data.copy()
     len_DATA = len(meta_data)
 
@@ -243,7 +271,6 @@ def dump_all_chosen_models_to_pickle(base_learner_models_dict: dict,
                                      meta_learner_model_tuple: tuple,
                                      meta_learner_features: list[str],
                                      meta_learner_path: str) -> None:
-
     # before dumping, we need to remove all files and folders in the given paths
     if os.path.exists(base_learners_path):
         for file in os.listdir(base_learners_path):
@@ -281,4 +308,4 @@ def save_outputs(output_path: str,
     :param return_data_df: data to be saved
     :return: None
     """
-    return_data_df.to_csv(output_path, index=False)
+    return_data_df.to_csv(f'{output_path}trained_data.csv', index=False)

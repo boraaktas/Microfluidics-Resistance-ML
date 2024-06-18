@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from src.train_functions import (train_test_split,
+from src.train_functions import (train_valid_split,
                                  lazy_fit,
                                  get_comparison_df_for_base_models,
                                  choose_best_base_models,
@@ -93,11 +93,11 @@ def train(data_df: pd.DataFrame,
     base_feature_column_names = feature_column_names.copy()
     base_target_column_name = target_column_name
 
-    # ------------------------------------------- TRAIN TEST SPLIT -----------------------------------------------------
+    # ---------------------------------------- TRAIN VALIDATION SPLIT --------------------------------------------------
     base_data = base_data.sample(frac=1).reset_index(drop=True)
-    base_data = train_test_split(base_data, frac_train=1 - validation_percent)
-    base_train_data, base_test_data = (base_data[base_data['train_or_test'] == 'train'],
-                                       base_data[base_data['train_or_test'] == 'test'])
+    base_data = train_valid_split(base_data, frac_train=1 - validation_percent)
+    base_train_data, base_valid_data = (base_data[base_data['train_or_valid'] == 'train'],
+                                        base_data[base_data['train_or_valid'] == 'valid'])
 
     # --------------------------------------------- LAZY REGRESSION MODELS ---------------------------------------------
     base_models_dict, base_scores_df = lazy_fit(data=base_data,
@@ -109,7 +109,7 @@ def train(data_df: pd.DataFrame,
     base_models_comp_df = get_comparison_df_for_base_models(base_models_dict=base_models_dict,
                                                             base_scores_df=base_scores_df,
                                                             train_data=base_train_data,
-                                                            test_data=base_test_data,
+                                                            valid_data=base_valid_data,
                                                             feature_column_names=base_feature_column_names,
                                                             target_column_name=base_target_column_name)
 

@@ -34,7 +34,8 @@ class PredictionModel:
             meta_data_point_df[column_name] = [data_point_dict[column_name]]
 
         # first predict the base learner by using the meta learner
-        chosen_base_learner_name = str(self.meta_learner.predict(meta_data_point_df)[0])
+        meta_learner = self.meta_learner[1]
+        chosen_base_learner_name = str(meta_learner.predict(meta_data_point_df)[0])
 
         # get the predicted model from the base learners dictionary
         chosen_base_learner = self.base_learners_dict[chosen_base_learner_name]
@@ -69,7 +70,7 @@ class PredictionModel:
         return base_learners_dict
 
     @staticmethod
-    def load_meta_learner(meta_learner_pickle_path: str):
+    def load_meta_learner(meta_learner_pickle_path: str) -> tuple:
         """
         Loads the meta learner from the pickle file in the given path.
 
@@ -87,9 +88,10 @@ class PredictionModel:
             if file.endswith('.pkl'):
                 pickle_file_path = file
 
+        meta_learner_name = pickle_file_path.split('.')[0]
         meta_learner = pickle.load(open(meta_learner_pickle_path + pickle_file_path, 'rb'))
 
-        return meta_learner
+        return meta_learner_name, meta_learner
 
     @staticmethod
     def load_base_learner_features(base_learners_pickle_path: str) -> list[str]:
@@ -112,3 +114,23 @@ class PredictionModel:
                 meta_learner_features.append(line.strip())
 
         return meta_learner_features
+
+
+if __name__ == '__main__':
+
+    PRE_MODEL_OBJ = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
+                                    meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
+
+    feature_columns = list(set(PRE_MODEL_OBJ.base_learner_features + PRE_MODEL_OBJ.meta_learner_features))
+
+    data_dict = {'Step_Size': 1.5,
+                 'Side_Length': 10,
+                 'Total_Length': 10,
+                 'Corner': 20,
+                 'Height': 50,  # micrometer
+                 'Width': 50,  # micrometer
+                 'Fillet_Radius': 50  # micrometer
+                 }
+
+    pred = PRE_MODEL_OBJ.predict(data_dict)
+    print(f'The prediction is: {pred}')
