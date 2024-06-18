@@ -41,7 +41,7 @@ if __name__ == '__main__':
     print(f'Total number of data points for real test: {len(TEST_DATA)}')
     TEST_DATA = TEST_DATA.sample(n=5000, random_state=42).reset_index(drop=True)
 
-    TEST_DATA.to_csv('data/datasets/train_outputs/real_test_data.csv', index=False)
+    TEST_DATA.to_csv('data/datasets/train_outputs/test_data.csv', index=False)
     # ------------------------------------ Training ------------------------------------
     FEATURE_COLUMN_NAMES = TRAIN_DATA.columns[2:-1]
     TARGET_COLUMN_NAME = TRAIN_DATA.columns[-1]
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     BASE_LEARNERS_PICKLE_PATH = 'data/pickles/base_learner_pickles/'
     META_LEARNER_PICKLE_PATH = 'data/pickles/meta_learner_pickles/'
 
-    TRAINED_DATA_CSV_PATH = 'data/datasets/train_outputs/trained_data.csv'
+    TRAINED_DATA_CSV_PATH = 'data/datasets/train_outputs/train_data.csv'
 
     print(f'Training the models with {LEN_DATA} data points')
     TRAINED_DATA, BEST_BASE_MODELS_DICT, META_MODEL_TUPLE = train(data_df=TRAIN_DATA,
