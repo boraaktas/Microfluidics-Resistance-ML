@@ -46,7 +46,7 @@ class PredictionModel:
 
         prediction = float(chosen_base_learner.predict(base_data_point_df)[0])
 
-        return prediction, chosen_base_learner_name
+        return prediction
 
     @staticmethod
     def load_base_learners(base_learners_pickle_path: str) -> dict:

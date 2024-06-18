@@ -2,17 +2,19 @@ import os
 
 import pandas as pd
 
-from src import (train_test_split,
-                 lazy_fit,
-                 get_comparison_df_for_base_models,
-                 choose_best_base_models,
-                 create_meta_learner_data,
-                 choose_best_meta_model,
-                 dump_all_chosen_models_to_pickle,
-                 save_outputs)
+from src.train_functions import (train_test_split,
+                                 lazy_fit,
+                                 get_comparison_df_for_base_models,
+                                 choose_best_base_models,
+                                 create_meta_learner_data,
+                                 choose_best_meta_model,
+                                 dump_all_chosen_models_to_pickle,
+                                 save_outputs)
 
 
 def train(data_df: pd.DataFrame,
+          validation_percent: float,
+
           feature_column_names: list[str],
           target_column_name: str,
 
@@ -26,13 +28,13 @@ def train(data_df: pd.DataFrame,
           save_models: bool = False,
           base_learners_pickle_path: str = None,
           meta_learner_pickle_path: str = None
-          ) -> tuple[pd.DataFrame,
-                     dict[str, tuple[int, object]],
-                     tuple[str, object]]:
+          ) -> tuple[pd.DataFrame, dict[str, tuple[int, object]], tuple[str, object]]:
     """
     This function is used to train the models and save them to pickle files.
 
     :param data_df: The data that will be used to train the models.
+    :param validation_percent: The percentage of the data that will be used for validation.
+
     :param feature_column_names: The names of the columns that will be used as features.
     :param target_column_name: The name of the column that will be used as target.
 
@@ -55,6 +57,10 @@ def train(data_df: pd.DataFrame,
     :return: meta_model_tuple: A tuple that contains the best meta learner. The first element is the model name and,
                                the second element is the model itself.
     """
+
+    if validation_percent < 0 or validation_percent > 1:
+        msg = 'The validation_percentage must be between 0 and 1.'
+        raise ValueError(msg)
 
     if save_models:
         if base_learners_pickle_path is None or meta_learner_pickle_path is None:
@@ -89,7 +95,7 @@ def train(data_df: pd.DataFrame,
 
     # ------------------------------------------- TRAIN TEST SPLIT -----------------------------------------------------
     base_data = base_data.sample(frac=1).reset_index(drop=True)
-    base_data = train_test_split(base_data, frac_train=0.9)
+    base_data = train_test_split(base_data, frac_train=1 - validation_percent)
     base_train_data, base_test_data = (base_data[base_data['train_or_test'] == 'train'],
                                        base_data[base_data['train_or_test'] == 'test'])
 
