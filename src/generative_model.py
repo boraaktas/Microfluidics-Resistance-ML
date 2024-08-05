@@ -78,7 +78,7 @@ class GenerativeModel:
                          maze: np.ndarray) -> tuple[float, bool]:
         resistance = self.predict_resistance(maze=maze)
 
-        fitness = abs(self.desired_resistance - resistance)
+        fitness = (abs(self.desired_resistance - resistance) / self.desired_resistance) * 100
 
         return fitness, True
 
@@ -159,9 +159,9 @@ if __name__ == '__main__':
                                       meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
 
     DESIRED_RESISTANCE = 30
-    WIDTH = 0.10
-    HEIGHT = 0.10
-    FILLET_RADIUS = 0.10
+    WIDTH = 0.05
+    HEIGHT = 0.05
+    FILLET_RADIUS = 0.04
     GenerativeModel = GenerativeModel(prediction_model=PredictionModel,
                                       desired_resistance=DESIRED_RESISTANCE,
                                       step_size_factor=0.5,
