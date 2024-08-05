@@ -178,7 +178,7 @@ if __name__ == '__main__':
     FILLET_RADIUS = 0.04
 
     TARGET_LOC_MODE = "east"  # east or north
-    METHOD = "SA"  # TS or SA
+    METHOD = "TS"  # TS or SA
 
     GenerativeModel = GenerativeModel(prediction_model=PredictionModel,
                                       desired_resistance=DESIRED_RESISTANCE,
