@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Callable, Union, Optional
 
 from matplotlib import pyplot as plt
+
 from maze_generation import plot_maze
 
 

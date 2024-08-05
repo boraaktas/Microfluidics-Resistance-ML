@@ -1,6 +1,8 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from typing import Tuple, List
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 from feature_extractor import extract_features, get_coord_list
 from prediction_model import PredictionModel
 

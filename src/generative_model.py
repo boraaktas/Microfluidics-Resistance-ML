@@ -2,11 +2,11 @@ import copy
 
 import numpy as np
 
-from prediction_model import PredictionModel
 from feature_extractor import extract_features, get_coord_list
 from maze_generation import complete_maze, random_maze_generator, plot_maze
-from tabu_search import TS
+from prediction_model import PredictionModel
 from simulated_annealing import SA
+from tabu_search import TS
 
 
 class GenerativeModel:

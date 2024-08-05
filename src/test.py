@@ -1,10 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
-
-from src.prediction_model import PredictionModel
 from src.error_metrics import RMSE, MAPE
+from src.prediction_model import PredictionModel
 
 
 def test(data_df: pd.DataFrame,
