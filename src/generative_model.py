@@ -19,6 +19,7 @@ class GenerativeModel:
                  height: float,
                  fillet_radius: float,
                  target_loc_mode: str,
+                 method: str,
                  side_length: int = 20
                  ):
         self.PREDICTION_MODEL = prediction_model
@@ -28,11 +29,12 @@ class GenerativeModel:
         self.height = height
         self.fillet_radius = fillet_radius
         self.target_loc_mode = target_loc_mode
+        self.method = method
         self.side_length = side_length
 
-    def generate_maze(self, method: str = "TS") -> np.ndarray:
+    def generate_maze(self) -> np.ndarray:
 
-        if method == "TS":
+        if self.method == "TS":
             solution = TS(init_method=self.initialization,
                           N_List=[self.N1, self.N2, self.N3],
                           N_func_weights=[0.1, 0.8, 0.1],
@@ -42,7 +44,7 @@ class GenerativeModel:
                           time_limit=100,
                           print_iteration=True)
 
-        elif method == "SA":
+        elif self.method == "SA":
             solution = SA(init_method=self.initialization,
                           N_List=[self.N1, self.N2, self.N3],
                           N_func_weights=[0.1, 0.8, 0.1],
@@ -56,9 +58,18 @@ class GenerativeModel:
         return solution
 
     def initialization(self) -> tuple[np.ndarray, float]:
+
+        if self.desired_resistance < 10:
+            path_finding_mode = "shortest"
+        elif self.desired_resistance > 50:
+            path_finding_mode = "longest"
+        else:
+            path_finding_mode = "random"
+
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="random")
+                                            path_finding_mode=path_finding_mode)
+
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness
 
@@ -158,20 +169,28 @@ if __name__ == '__main__':
     PredictionModel = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
                                       meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
 
+    STEP_SIZE_FACTOR = 0.5
+    SIDE_LENGTH = 20
+
     DESIRED_RESISTANCE = 30
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
+
+    TARGET_LOC_MODE = "east"  # east or north
+    METHOD = "SA"  # TS or SA
+
     GenerativeModel = GenerativeModel(prediction_model=PredictionModel,
                                       desired_resistance=DESIRED_RESISTANCE,
-                                      step_size_factor=0.5,
+                                      step_size_factor=STEP_SIZE_FACTOR,
                                       width=WIDTH,
                                       height=HEIGHT,
                                       fillet_radius=FILLET_RADIUS,
-                                      target_loc_mode="north",
-                                      side_length=20)
+                                      target_loc_mode=TARGET_LOC_MODE,
+                                      method=METHOD,
+                                      side_length=SIDE_LENGTH)
 
-    MAZE, FITNESS = GenerativeModel.generate_maze(method="SA")
+    MAZE, FITNESS = GenerativeModel.generate_maze()
     GenerativeModel.pretty_print_maze(MAZE)
     plot_maze(MAZE)
 
