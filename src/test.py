@@ -11,7 +11,7 @@ def test(data_df: pd.DataFrame,
          feature_column_names: list[str],
          target_column_name: str,
          upload_model: bool = False,
-         base_models_dict: dict[str, tuple] = None,  # [rank, model
+         base_models_dict: dict[str, object] = None,
          meta_model_tuple: tuple = None,
          base_models_path: str = None,
          meta_model_path: str = None,
@@ -36,12 +36,12 @@ def test(data_df: pd.DataFrame,
     :return: The RMSE and MAPE of the test data
     """
     if upload_model:
-        if base_models_dict is None or meta_model_tuple is None:
-            raise ValueError('Please provide the best base models and the meta model')
-
-        predModel = PredictionModel(base_models_path, meta_model_path)
-        base_models_dict = predModel.base_learners_dict
-        meta_model_tuple = predModel.meta_learner
+        try:
+            predModel = PredictionModel(base_models_path, meta_model_path)
+            base_models_dict = predModel.base_learners_dict
+            meta_model_tuple = predModel.meta_learner
+        except FileNotFoundError:
+            raise FileNotFoundError('Please provide the correct paths for the models')
 
     if not upload_model:
         if base_models_dict is None or meta_model_tuple is None:
@@ -57,10 +57,18 @@ def test(data_df: pd.DataFrame,
         row = row.to_frame().T
 
         base_model_prediction = str(meta_model_tuple[1].predict(row)[0])
+        # base_model_prediction = 'GaussianProcessRegressor'
+        # base_model_prediction = 'RandomForestRegressor'
+        # base_model_prediction = 'LGBMRegressor'
+        # base_model_prediction = 'ExtraTreesRegressor'
 
-        base_model = base_models_dict[base_model_prediction][1]
-        prediction = base_model.predict(row)[0]
+        base_model = base_models_dict[base_model_prediction]
+        prediction = float(base_model.predict(row)[0])
 
+        print(f"{index} - "
+              f"Base model prediction: {base_model_prediction}, "
+              f"Prediction: {prediction}, "
+              f"Real value: {Y_TEST[index]}")
         predictions.append(float(prediction))
 
     predictions = np.array(predictions)

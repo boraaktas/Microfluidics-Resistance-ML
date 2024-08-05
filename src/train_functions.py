@@ -5,7 +5,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from lazypredict.Supervised import LazyRegressor, LazyClassifier
+from lazypredict.Supervised import LazyRegressor, LazyClassifier, REGRESSORS, CLASSIFIERS
 
 from src.error_metrics import MSE, RMSE, MAE, MAPE
 
@@ -30,7 +30,6 @@ def read_data(csv_files_paths: list[str]) -> pd.DataFrame:
 def preprocess(data: pd.DataFrame,
                feature_column_names: list[str],
                ) -> pd.DataFrame:
-
     data_copy = data.copy()
     data_reduced = data_copy[feature_column_names]
 
@@ -87,17 +86,56 @@ def lazy_fit(data: pd.DataFrame,
                         data[data['train_or_valid'] == 'valid'][target_column_name])
 
     if prediction_type == 'classification':
-        lazy = LazyClassifier(verbose=0, ignore_warnings=False, custom_metric=None)
+
+        extract_classifier_names = ['LabelPropagation',  # the training time is too long
+                                    'LabelSpreading',  # the training time is too long
+                                    ]
+
+        classifiers = []
+        for classifier in CLASSIFIERS:
+            if classifier[0] not in extract_classifier_names:
+                classifiers.append(classifier)
+                print(f'{classifier[0]} is added to the classifiers list')
+
+        print(f'Number of classifiers: {len(classifiers)}')
+
+        lazy = LazyClassifier(verbose=0,
+                              ignore_warnings=False,
+                              custom_metric=None,
+                              classifiers=classifiers)
 
     elif prediction_type == 'regression':
-        lazy = LazyRegressor(verbose=0, ignore_warnings=False, custom_metric=None)
+
+        extract_regressor_names = ['GaussianProcessRegressor',  # prediction time is too long
+                                   'ExtraTreesRegressor',
+                                   'ExtraTreeRegressor',
+                                   'RandomForestRegressor',
+                                   'KernelRidge',  # the training time is too long
+                                   'DecisionTreeRegressor',  # it is too dominant
+                                   ]
+
+        regressors = []
+        for regressor in REGRESSORS:
+            if regressor[0] not in extract_regressor_names:
+                regressors.append(regressor)
+                print(f'{regressor[0]} is added to the regressors list')
+
+        print(f'Number of regressors: {len(regressors)}')
+
+        lazy = LazyRegressor(verbose=0,
+                             ignore_warnings=False,
+                             custom_metric=None,
+                             regressors=regressors)
 
     else:
         raise ValueError('prediction_type should be either "classification" or "regression"')
 
+    print('Fitting the models...')
     lazy_scores, lazy_preds = lazy.fit(x_train, x_valid, y_train, y_valid)
 
-    return lazy.models, lazy_scores
+    models, scores = lazy.models, lazy_scores
+
+    return models, scores
 
 
 def get_comparison_df_for_base_models(base_models_dict: dict,
@@ -280,9 +318,13 @@ def dump_all_chosen_models_to_pickle(base_learner_models_dict: dict,
         for file in os.listdir(meta_learner_path):
             os.remove(f'{meta_learner_path}{file}')
 
+    no_base_learners = len(base_learner_models_dict)
+    print(f"Number of base learners: {no_base_learners}")
     # dump chosen base learner models to pickle
     for model_name, model in base_learner_models_dict.items():
+        print(f"Dumping {model_name} to pickle")
         pickle.dump(model[1], open(f'{base_learners_path}{model_name}.pkl', 'wb'))
+        print(f"{model_name} dumped successfully")
 
     # dump chosen base learner features to a txt file
     with open(f'{base_learners_path}base_learner_features.txt', 'w') as f:
