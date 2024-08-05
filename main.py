@@ -2,10 +2,8 @@ import pandas as pd
 from src import read_data, preprocess, train_test_split, train, test
 
 if __name__ == '__main__':
-    SIMULATION_RESULTS_CSVS_PATH: list[str] = ['data/datasets/simulations/Simulation_Lib_1.csv',
-                                               'data/datasets/simulations/Simulation_Lib_2.csv',
-                                               'data/datasets/simulations/Simulation_Lib_3.csv',
-                                               'data/datasets/simulations/Simulation_Lib_4.csv']
+    SIMULATION_RESULTS_CSVS_PATH: list[str] = ['data/datasets/simulations/Simulation_Lib_5.csv',
+                                               'data/datasets/simulations/Simulation_Lib_6.csv']
 
     ALL_DATA: pd.DataFrame = read_data(SIMULATION_RESULTS_CSVS_PATH)
     LEN_DATA = len(ALL_DATA)
@@ -15,11 +13,16 @@ if __name__ == '__main__':
     ALL_DATA['Simulation_Number'] = [i + 1 for i in range(LEN_DATA)]
     ALL_DATA = ALL_DATA.drop(columns=['Theoretical_Resistance',
                                       'Pressure_Difference',
-                                      'Flow_Rate'])
+                                      'Flow_Rate',
+                                      'Step_Size',
+                                      'Side_Length'])
     # -----------------------------------------------------------------------------------------
 
     FEATURE_COLUMN_NAMES = ALL_DATA.columns[2:-1]
     TARGET_COLUMN_NAME = ALL_DATA.columns[-1]
+
+    print(f'Feature column names: {FEATURE_COLUMN_NAMES}')
+    print(f'Target column name: {TARGET_COLUMN_NAME}')
 
     BASE_LEARNERS_PICKLE_PATH = 'data/pickles/base_learner_pickles/'
     META_LEARNER_PICKLE_PATH = 'data/pickles/meta_learner_pickles/'
@@ -54,10 +57,12 @@ if __name__ == '__main__':
                                                              base_learners_pickle_path=BASE_LEARNERS_PICKLE_PATH,
                                                              meta_learner_pickle_path=META_LEARNER_PICKLE_PATH)
 
+    BASE_MODELS_DICT_WITHOUT_RANK = {key: value[1] for key, value in BASE_MODELS_DICT.items()}
+
     TEST_RMSE, TEST_MAPE = test(data_df=TEST_DATA,
                                 feature_column_names=FEATURE_COLUMN_NAMES,
                                 target_column_name=TARGET_COLUMN_NAME,
-                                base_models_dict=BASE_MODELS_DICT,
+                                base_models_dict=BASE_MODELS_DICT_WITHOUT_RANK,
                                 meta_model_tuple=META_MODEL_TUPLE,
                                 plot=True
                                 )
