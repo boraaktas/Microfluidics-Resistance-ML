@@ -1,8 +1,8 @@
-from typing import List, Tuple
+from typing import List
 import numpy as np
 
 
-def get_coord_list(maze: np.ndarray) -> List[Tuple[int, int]]:
+def get_coord_list(maze: np.ndarray) -> List[List[int]]:
     """
     This function takes a maze and returns a list of coordinates of the path.
 
@@ -12,21 +12,19 @@ def get_coord_list(maze: np.ndarray) -> List[Tuple[int, int]]:
     """
     rows, cols = maze.shape
 
-    coords: List[Tuple[int, int, int]] = []
+    coords: List[List[int]] = []
     for i in range(rows):
         for j in range(cols):
             if maze[i, j] > 0:
-                coords.append((i, j, maze[i, j].item()))
+                coords.append([i, j, maze[i, j].item()])
 
     # sort the coords by the third element
     coords.sort(key=lambda x: x[2])
 
-    # remove third element
-    coords = [(x, y) for x, y, _ in coords]
     return coords
 
 
-def get_total_length(maze_coords: List[Tuple[int, int]], step_size_factor: float) -> float:
+def get_total_length(maze_coords: List[List[int]], step_size_factor: float) -> float:
     """
     This function calculates the total length of the path in the maze.
 
@@ -38,7 +36,7 @@ def get_total_length(maze_coords: List[Tuple[int, int]], step_size_factor: float
     return total_length
 
 
-def get_no_corners(maze_coords: List[Tuple[int, int]]) -> int:
+def get_no_corners(maze_coords: List[List[int]]) -> int:
     """
     This function calculates the number of corners in the path of the maze.
 
@@ -48,8 +46,8 @@ def get_no_corners(maze_coords: List[Tuple[int, int]]) -> int:
     no_corners = 0
 
     for i in range(1, len(maze_coords) - 1):
-        x1, y1 = maze_coords[i - 1]
-        x3, y3 = maze_coords[i + 1]
+        x1, y1, v1 = maze_coords[i - 1]
+        x3, y3, v3 = maze_coords[i + 1]
         if x1 != x3 and y1 != y3:
             no_corners += 1
     return no_corners
