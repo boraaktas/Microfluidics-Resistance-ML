@@ -213,8 +213,9 @@ if __name__ == "__main__":
     SIDE_LENGTH = 20
     TARGET_LOC_MODE = "north"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
+    PATH_FINDING_MODE = "shortest"
 
-    MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE)
+    MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
     plot_maze(MAZE)
 
     FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
@@ -225,43 +226,3 @@ if __name__ == "__main__":
 
     RANDOM_MAZE_RESISTANCE = PREDICTION_MODEL.predict(FEATURES_DICT)
     print(f"The prediction resistance of the random maze is: {RANDOM_MAZE_RESISTANCE}")
-
-    # --------- DELETE A PATH IN THE MAZE ---------
-    LOCATIONS_IN_MAZE = get_coord_list(MAZE)
-    print(f"The locations in the maze are: {LOCATIONS_IN_MAZE}")
-    # randomly select two locations and delete the path between them
-    RANDOM_INDEX_1, RANDOM_INDEX_2 = np.random.choice(range(1, len(LOCATIONS_IN_MAZE) - 1), 2, replace=False)
-    RANDOM_INDICES = np.sort([RANDOM_INDEX_1, RANDOM_INDEX_2])
-    print(f"The random indices are: {RANDOM_INDICES}")
-    print(f"The random locations are: {LOCATIONS_IN_MAZE[RANDOM_INDICES[0]]}, {LOCATIONS_IN_MAZE[RANDOM_INDICES[1]]}")
-
-    DELETED_LOCATIONS_IN_MAZE = LOCATIONS_IN_MAZE[RANDOM_INDICES[0]: RANDOM_INDICES[1]]
-    print(f"The deleted locations in the maze are: {DELETED_LOCATIONS_IN_MAZE}")
-
-    DELETED_MAZE = np.copy(MAZE)
-    for X, Y, V in DELETED_LOCATIONS_IN_MAZE:
-        DELETED_MAZE[X, Y] = 0
-
-    plot_maze(DELETED_MAZE)
-
-    # ----------- FILL THE GAP -----------
-    LEFT_LOCATIONS = get_coord_list(DELETED_MAZE)
-
-    LAST_LOCATION_BEFORE_EMPTY = LOCATIONS_IN_MAZE[RANDOM_INDICES[0] - 1]
-    TARGET_LOCATION = (LOCATIONS_IN_MAZE[RANDOM_INDICES[1]][0], LOCATIONS_IN_MAZE[RANDOM_INDICES[1]][1])
-    START_COORDS = [LAST_LOCATION_BEFORE_EMPTY[0], LAST_LOCATION_BEFORE_EMPTY[1],
-                    MAZE[LAST_LOCATION_BEFORE_EMPTY[0], LAST_LOCATION_BEFORE_EMPTY[1]].item()]
-    print(f"The start coords are: {START_COORDS}")
-    print(f"The target coords are: {TARGET_LOCATION}")
-
-    NEW_MAZE = complete_maze(DELETED_MAZE,
-                             START_COORDS,
-                             TARGET_LOCATION,
-                             LEFT_LOCATIONS,
-                             "longest")
-    plot_maze(NEW_MAZE)
-    NEW_FEATURES_DICT = extract_features(NEW_MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
-    print(NEW_FEATURES_DICT)
-
-    NEW_MAZE_RESISTANCE = PREDICTION_MODEL.predict(NEW_FEATURES_DICT)
-    print(f"The prediction resistance of the new maze is: {NEW_MAZE_RESISTANCE}")
