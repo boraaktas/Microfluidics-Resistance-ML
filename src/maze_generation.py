@@ -145,7 +145,7 @@ def random_maze_generator(side_length, target_loc_mode: str,
     center = int((len_matrix - 1) / 2)
 
     start_coords = [center, 0, 1]
-    target_coords = (0, center) if target_loc_mode == "north" else (center, len_matrix - 1)
+    target_coords = (len_matrix - 1, center) if target_loc_mode == "north" else (center, len_matrix - 1)
     coords_list = get_coord_list(random_matrix)
 
     random_matrix = complete_maze(random_matrix,
@@ -204,9 +204,6 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
     ax.set_aspect('equal')
     ax.axis('off')
 
-    # get symmetric for the y-axis
-    ax.invert_yaxis()
-
     plt.show()
 
 
@@ -215,7 +212,7 @@ if __name__ == "__main__":
     SIDE_LENGTH = 20
     TARGET_LOC_MODE = "north"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
-    PATH_FINDING_MODE = "random"
+    PATH_FINDING_MODE = "longest"
 
     MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
     plot_maze(MAZE, print_maze=True)
