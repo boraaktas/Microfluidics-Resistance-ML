@@ -157,16 +157,18 @@ def random_maze_generator(side_length, target_loc_mode: str,
     return random_matrix
 
 
-def plot_maze(maze: np.ndarray):
+def plot_maze(maze: np.ndarray, print_maze: bool = False):
     """
     This function plots the maze using lines to represent walls and paths.
 
     :param maze: A 2D numpy array representing the maze where 0s are open paths, -1s are walls,
                  positive numbers are steps in the path, and -2 is the target.
+    :param print_maze: A boolean that indicates whether to print the maze to the console or not.
     """
     # print state_matrix with a pretty format to the console
-    """for row in maze:
-        print(" ".join(str(cell).rjust(5) for cell in row))"""
+    if print_maze:
+        for row in maze:
+            print(" ".join(str(cell).rjust(5) for cell in row))
 
     fig, ax = plt.subplots(figsize=(10, 10))
     rows, cols = maze.shape
@@ -213,10 +215,10 @@ if __name__ == "__main__":
     SIDE_LENGTH = 20
     TARGET_LOC_MODE = "north"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
-    PATH_FINDING_MODE = "shortest"
+    PATH_FINDING_MODE = "random"
 
     MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
-    plot_maze(MAZE)
+    plot_maze(MAZE, print_maze=True)
 
     FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
     print(FEATURES_DICT)
