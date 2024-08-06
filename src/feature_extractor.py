@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 
 
-def get_coord_list(maze: np.ndarray) -> List[List[int]]:
+def get_coord_list_matrix(maze: np.ndarray) -> List[List[int]]:
     """
     This function takes a maze and returns a list of coordinates of the path.
 
@@ -18,6 +18,28 @@ def get_coord_list(maze: np.ndarray) -> List[List[int]]:
         for j in range(cols):
             if maze[i, j] > 0:
                 coords.append([i, j, maze[i, j].item()])
+
+    # sort the coords by the third element
+    coords.sort(key=lambda x: x[2])
+
+    return coords
+
+
+def get_coord_list_plot(maze: np.ndarray) -> List[List[int]]:
+    """
+    This function takes a maze and returns a list of coordinates of the path.
+
+    :param maze: A 2D numpy array representing the maze where 0s are open paths, -1s are walls,
+                 positive numbers are steps in the path, and -2 is the target.
+    :return: A list of coordinates of the path.
+    """
+    rows, cols = maze.shape
+
+    coords: List[List[int]] = []
+    for i in range(rows):
+        for j in range(cols):
+            if maze[i, j] > 0:
+                coords.append([j, rows-i-1, maze[i, j].item()])
 
     # sort the coords by the third element
     coords.sort(key=lambda x: x[2])
@@ -73,7 +95,7 @@ def extract_features(maze: np.ndarray,
     :return: A dictionary containing the extracted features.
     """
 
-    maze_coords = get_coord_list(maze)
+    maze_coords = get_coord_list_matrix(maze)
 
     total_length = get_total_length(maze_coords, step_size_factor)
     no_corners = get_no_corners(maze_coords)

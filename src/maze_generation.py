@@ -3,7 +3,7 @@ from typing import Tuple, List
 import matplotlib.pyplot as plt
 import numpy as np
 
-from feature_extractor import extract_features, get_coord_list
+from feature_extractor import extract_features, get_coord_list_matrix, get_coord_list_plot
 from prediction_model import PredictionModel
 
 
@@ -145,8 +145,8 @@ def random_maze_generator(side_length, target_loc_mode: str,
     center = int((len_matrix - 1) / 2)
 
     start_coords = [center, 0, 1]
-    target_coords = (len_matrix - 1, center) if target_loc_mode == "north" else (center, len_matrix - 1)
-    coords_list = get_coord_list(random_matrix)
+    target_coords = (0, center) if target_loc_mode == "north" else (center, len_matrix - 1)
+    coords_list = get_coord_list_matrix(random_matrix)
 
     random_matrix = complete_maze(random_matrix,
                                   start_coords,
@@ -173,11 +173,7 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
     fig, ax = plt.subplots(figsize=(10, 10))
     rows, cols = maze.shape
 
-    coords = []
-    for i in range(rows):
-        for j in range(cols):
-            if maze[i, j] > 0:
-                coords.append((i, j, maze[i, j].item()))
+    coords = get_coord_list_plot(maze)
 
     # sort the coords by the third element
     coords.sort(key=lambda x: x[2])
@@ -190,7 +186,7 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
         x2, y2 = coords[i + 1]
         # if they are neighbors, plot a line
         if abs(x1 - x2) + abs(y1 - y2) == 1:
-            ax.plot([y1, y2], [x1, x2], 'k')
+            ax.plot([x1, x2], [y1, y2], 'k')
 
     corners = [(0, 0), (rows - 1, 0), (rows - 1, cols - 1), (0, cols - 1)]
     # plot the walls with red borders line
@@ -198,7 +194,7 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
         x1, y1 = corners[i]
         x2, y2 = corners[(i + 1) % len(corners)]
         if maze[x1, y1] == -1:
-            ax.plot([y1, y2], [x1, x2], 'r')
+            ax.plot([x1, x2], [y1, y2], 'r')
 
     # set the aspect of the plot to be equal
     ax.set_aspect('equal')
@@ -212,7 +208,7 @@ if __name__ == "__main__":
     SIDE_LENGTH = 20
     TARGET_LOC_MODE = "north"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
-    PATH_FINDING_MODE = "longest"
+    PATH_FINDING_MODE = "random"
 
     MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
     plot_maze(MAZE, print_maze=True)

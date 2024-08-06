@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from feature_extractor import extract_features, get_coord_list
+from feature_extractor import extract_features, get_coord_list_matrix
 from maze_generation import complete_maze, random_maze_generator, plot_maze
 from prediction_model import PredictionModel
 from simulated_annealing import SA
@@ -116,7 +116,7 @@ class GenerativeModel:
         maze = copy.deepcopy(maze_and_fitness[0])
         fitness = maze_and_fitness[1]
 
-        LOCATIONS_IN_MAZE = get_coord_list(maze)
+        LOCATIONS_IN_MAZE = get_coord_list_matrix(maze)
         len_maze = len(LOCATIONS_IN_MAZE)
 
         max_cells_to_delete = int(len_maze // 2)
@@ -142,7 +142,7 @@ class GenerativeModel:
             DELETED_MAZE[X, Y] = 0
 
         # ----------- FILL THE GAP -----------
-        LEFT_LOCATIONS = get_coord_list(DELETED_MAZE)
+        LEFT_LOCATIONS = get_coord_list_matrix(DELETED_MAZE)
 
         LAST_LOCATION_BEFORE_EMPTY = LOCATIONS_IN_MAZE[RANDOM_INDICES[0] - 1]
         TARGET_LOCATION = (LOCATIONS_IN_MAZE[RANDOM_INDICES[1]][0], LOCATIONS_IN_MAZE[RANDOM_INDICES[1]][1])
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
 
-    TARGET_LOC_MODE = "east"  # east or north
+    TARGET_LOC_MODE = "north"  # east or north
     METHOD = "TS"  # TS or SA
 
     GenerativeModel = GenerativeModel(prediction_model=PredictionModel,
