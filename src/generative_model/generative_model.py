@@ -39,7 +39,6 @@ class GenerativeModel:
         if self.method == "TS":
             solution = TS(init_method=self.initialization,
                           N_List=[self.N1, self.N2, self.N3],
-                          N_func_weights=[0.1, 0.8, 0.1],
                           objective_method=self.fitness_function,
                           tabu_size=10,
                           num_neighbors=50,
@@ -49,7 +48,6 @@ class GenerativeModel:
         elif self.method == "SA":
             solution = SA(init_method=self.initialization,
                           N_List=[self.N1, self.N2, self.N3],
-                          N_func_weights=[0.1, 0.8, 0.1],
                           objective_method=self.fitness_function,
                           time_limit=100,
                           print_iteration=True)
