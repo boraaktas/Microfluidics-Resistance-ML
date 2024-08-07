@@ -208,7 +208,7 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
 if __name__ == "__main__":
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
-    TARGET_LOC_MODE = "north"  # east or north
+    TARGET_LOC_MODE = "east"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
     PATH_FINDING_MODE = "random"
 
@@ -218,7 +218,8 @@ if __name__ == "__main__":
     FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
     print(FEATURES_DICT)
 
-    build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+    maze = build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+    maze.show()
 
     PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
                                        meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')

@@ -20,7 +20,7 @@ def create_box_between_points(start, end, width, height):
     direction = vector / length
 
     # Create box along the z-axis
-    box_mesh = box(extents=[height, width, length + width])
+    box_mesh = box(extents=[height, width, length])
 
     # Align box with the direction vector
     transform = trimesh.geometry.align_vectors([0, 0, 1], direction)
@@ -74,7 +74,7 @@ def create_cylinder_between_points(start, end, radius, direction):
     quarter_cylinder.apply_transform(transform)
 
     # Move the quarter cylinder to the correct start position
-    translation = start + direction_vector * (0)
+    translation = start + direction_vector * (length / 2)
     quarter_cylinder.apply_translation(translation)
 
     return quarter_cylinder
@@ -138,6 +138,9 @@ def build_3d_maze(maze: np.ndarray,
     # Combine all path segments into a single mesh
     maze_mesh = trimesh.util.concatenate(path_meshes)
 
+    # Shift the maze to the correct position
+    maze_mesh.apply_translation([0, 0, height/2])
+
     # Clear the corner areas to make space for the fillets
     inner_radius = (fillet_radius - width / 2)
     outer_radius = inner_radius + width
@@ -181,7 +184,62 @@ def build_3d_maze(maze: np.ndarray,
     # Combine the maze mesh with the fillet mesh
     maze_mesh = trimesh.util.concatenate([maze_mesh, fillet_mesh])
 
-    # Save the mesh to file
-    maze_mesh.show()
+    # Import the stl base from the folder
+    base = trimesh.load_mesh('base.stl')
+
+    # Change the color of the base to white
+    base.visual.face_colors = [255, 255, 255, 255]
+
+    # Rotate the base 90 degrees around the x-axis and shift it up
+    base.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
+    base.apply_translation([0, 10, height])
+
+    # Combine the maze mesh with the base
+    maze_mesh.apply_translation([0, 0, 0])
+    maze_mesh = trimesh.util.concatenate([base, maze_mesh])
+
 
     return maze_mesh
+
+
+def main():
+    maze = [
+        [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 0, 7, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 5, 6, 13, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [-1, 0, 4, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+        [1, 2, 3, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 88, 89],
+        [-1, 0, 0, 0, 16, 17, 0, 0, 0, 0, 0, 33, 34, 0, 0, 0, 0, 0, 86, 87, -1],
+        [-1, 0, 0, 0, 0, 18, 0, 0, 0, 30, 31, 32, 35, 36, 37, 0, 0, 0, 85, 0, -1],
+        [-1, 0, 0, 0, 0, 19, 0, 0, 28, 29, 0, 0, 0, 0, 38, 39, 0, 0, 84, 83, -1],
+        [-1, 0, 0, 0, 0, 20, 0, 26, 27, 0, 0, 0, 0, 0, 0, 40, 41, 78, 79, 82, -1],
+        [-1, 0, 0, 0, 0, 21, 22, 25, 0, 0, 0, 49, 48, 47, 46, 45, 42, 77, 80, 81, -1],
+        [-1, 0, 0, 0, 0, 0, 23, 24, 0, 54, 53, 50, 61, 62, 63, 44, 43, 76, 75, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 55, 52, 51, 60, 0, 64, 0, 72, 73, 74, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 56, 57, 58, 59, 66, 65, 70, 71, 0, 0, 0, -1],
+        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 67, 68, 69, 0, 0, 0, 0, -1],
+        [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+    ]
+
+    # Define parameters
+    step_size_factor = 0.5
+    width = 0.05
+    height = 0.05
+    fillet_radius = 0.04
+
+    maze_mesh = build_3d_maze(maze, step_size_factor, width, height, fillet_radius)
+    maze_mesh.show()
+
+    # Save the mesh to file
+    maze_mesh.export('maze.stl')
+
+
+if __name__ == "__main__":
+    main()
+
