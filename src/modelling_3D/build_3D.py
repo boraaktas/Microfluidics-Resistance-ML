@@ -1,7 +1,7 @@
 import numpy as np
 import trimesh
 from trimesh.creation import box, cylinder
-from feature_extractor import get_coord_list_plot
+from src.maze_functions import get_coord_list_plot
 
 
 def create_box_between_points(start, end, width, height):
@@ -139,7 +139,7 @@ def build_3d_maze(maze: np.ndarray,
     maze_mesh = trimesh.util.concatenate(path_meshes)
 
     # Shift the maze to the correct position
-    maze_mesh.apply_translation([0, 0, height/2])
+    maze_mesh.apply_translation([0, 0, height / 2])
 
     # Clear the corner areas to make space for the fillets
     inner_radius = (fillet_radius - width / 2)
@@ -185,7 +185,7 @@ def build_3d_maze(maze: np.ndarray,
     maze_mesh = trimesh.util.concatenate([maze_mesh, fillet_mesh])
 
     # Import the stl base from the folder
-    base = trimesh.load_mesh('base.stl')
+    base = trimesh.load_mesh('data/STL/base.STL')
 
     # Change the color of the base to white
     base.visual.face_colors = [255, 255, 255, 255]
@@ -198,12 +198,13 @@ def build_3d_maze(maze: np.ndarray,
     maze_mesh.apply_translation([0, 0, 0])
     maze_mesh = trimesh.util.concatenate([base, maze_mesh])
 
+    maze_mesh.show()
 
     return maze_mesh
 
 
 def main():
-    maze = [
+    maze = np.array([
         [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
         [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
         [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
@@ -225,7 +226,7 @@ def main():
         [-1, 0, 0, 0, 0, 0, 0, 0, 0, 56, 57, 58, 59, 66, 65, 70, 71, 0, 0, 0, -1],
         [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 67, 68, 69, 0, 0, 0, 0, -1],
         [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-    ]
+    ])
 
     # Define parameters
     step_size_factor = 0.5
@@ -237,9 +238,8 @@ def main():
     maze_mesh.show()
 
     # Save the mesh to file
-    maze_mesh.export('maze.stl')
+    # maze_mesh.export('maze.stl')
 
 
 if __name__ == "__main__":
     main()
-

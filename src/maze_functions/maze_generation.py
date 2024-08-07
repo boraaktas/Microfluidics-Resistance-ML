@@ -3,10 +3,7 @@ from typing import Tuple, List
 import matplotlib.pyplot as plt
 import numpy as np
 
-from feature_extractor import extract_features, get_coord_list_matrix, get_coord_list_plot
-from prediction_model import PredictionModel
-
-from build_3D import build_3d_maze
+from .feature_extractor import get_coord_list_matrix, get_coord_list_plot
 
 
 def is_valid_move(x: int, y: int, visited, maze, target_coords):
@@ -203,27 +200,3 @@ def plot_maze(maze: np.ndarray, print_maze: bool = False):
     ax.axis('off')
 
     plt.show()
-
-
-if __name__ == "__main__":
-    STEP_SIZE_FACTOR = 0.5
-    SIDE_LENGTH = 20
-    TARGET_LOC_MODE = "east"  # east or north
-    WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
-    PATH_FINDING_MODE = "random"
-
-    MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
-    plot_maze(MAZE, print_maze=True)
-
-    FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
-    print(FEATURES_DICT)
-
-    maze = build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
-    maze.show()
-
-    PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
-                                       meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
-
-    RANDOM_MAZE_RESISTANCE = PREDICTION_MODEL.predict(FEATURES_DICT)
-    print(f"The prediction resistance of the random maze is: {RANDOM_MAZE_RESISTANCE}")
-

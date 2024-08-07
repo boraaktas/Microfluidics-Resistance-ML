@@ -19,11 +19,10 @@ class PredictionModel:
     def predict(self,
                 data_point_dict: dict[str, float]) -> float:
         """
-        Predicts the target value of the given data point.
-
-        :param data_point_dict: A dictionary that contains the data point. It should have the same keys as the feature
-                                                                           column names.
-        :return: prediction: The prediction of the data point.
+        Predicts the target value of the given drive_data point.
+        :param data_point_dict: A dictionary that contains the drive_data point.
+                                It should have the same keys as the feature column names.
+        :return: prediction: The prediction of the drive_data point.
         """
 
         # if keys of the data_point_dict does not include all the feature column names, raise an error
@@ -118,8 +117,8 @@ class PredictionModel:
 
 if __name__ == '__main__':
 
-    PRE_MODEL_OBJ = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
-                                    meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
+    PRE_MODEL_OBJ = PredictionModel(base_learners_pickle_path='../../drive_data/pickles/base_learner_pickles/',
+                                    meta_learner_pickle_path='../../drive_data/pickles/meta_learner_pickles/')
 
     feature_columns = list(set(PRE_MODEL_OBJ.base_learner_features + PRE_MODEL_OBJ.meta_learner_features))
 

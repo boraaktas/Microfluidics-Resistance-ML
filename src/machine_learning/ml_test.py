@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.error_metrics import RMSE, MAPE
-from src.prediction_model import PredictionModel
+from .error_metrics import RMSE, MAPE
+from .prediction_model import PredictionModel
 
 
 def test(data_df: pd.DataFrame,
@@ -17,9 +17,9 @@ def test(data_df: pd.DataFrame,
          plot: bool = False
          ) -> tuple[float, float]:
     """
-    Test the trained models on the test data
+    Test the trained models on the test drive_data
 
-    :param data_df: The test data
+    :param data_df: The test drive_data
     :param feature_column_names: The names of the columns that are the features
     :param target_column_name: The name of the column that is the target
     :param upload_model: A boolean that indicates whether to upload the models or not
@@ -32,7 +32,7 @@ def test(data_df: pd.DataFrame,
 
     :param plot: A boolean that indicates whether to plot the predictions or not
 
-    :return: The RMSE and MAPE of the test data
+    :return: The RMSE and MAPE of the test drive_data
     """
     if upload_model:
         try:
@@ -72,7 +72,7 @@ def test(data_df: pd.DataFrame,
 
     predictions = np.array(predictions)
 
-    # Get the RMSE and MAPE of the test data
+    # Get the RMSE and MAPE of the test drive_data
     rmse = RMSE(Y_TEST, predictions)
     mape = MAPE(Y_TEST, predictions)
 

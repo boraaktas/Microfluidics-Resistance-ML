@@ -2,14 +2,14 @@ import os
 
 import pandas as pd
 
-from src.train_functions import (train_valid_split,
-                                 lazy_fit,
-                                 get_comparison_df_for_base_models,
-                                 choose_best_base_models,
-                                 create_meta_learner_data,
-                                 choose_best_meta_model,
-                                 dump_all_chosen_models_to_pickle,
-                                 save_outputs)
+from .train_functions import (train_valid_split,
+                              lazy_fit,
+                              get_comparison_df_for_base_models,
+                              choose_best_base_models,
+                              create_meta_learner_data,
+                              choose_best_meta_model,
+                              dump_all_chosen_models_to_pickle,
+                              save_outputs)
 
 
 def train(data_df: pd.DataFrame,
@@ -32,8 +32,8 @@ def train(data_df: pd.DataFrame,
     """
     This function is used to train the models and save them to pickle files.
 
-    :param data_df: The data that will be used to train the models.
-    :param validation_percent: The percentage of the data that will be used for validation.
+    :param data_df: The drive_data that will be used to train the models.
+    :param validation_percent: The percentage of the drive_data that will be used for validation.
 
     :param feature_column_names: The names of the columns that will be used as features.
     :param target_column_name: The name of the column that will be used as target.
@@ -42,7 +42,7 @@ def train(data_df: pd.DataFrame,
 
     :param threshold_reg_adj_r2: The threshold for adjusted R2 score to choose the best models for base learners.
     :param threshold_diff_percent: The threshold for the difference percentage between the true values and the predicted
-                                   values for every data point to choose the best models for each data point.
+                                   values for every drive_data point to choose the best models for each drive_data point.
 
     :param save_output: A boolean that indicates whether to save the outputs or not.
     :param output_path: The path where the outputs will be saved.
@@ -51,7 +51,7 @@ def train(data_df: pd.DataFrame,
     :param base_learners_pickle_path: The path where the base learners will be saved.
     :param meta_learner_pickle_path: The path where the meta learner will be saved.
 
-    :return: return_data_df: The data that will be returned. It is the same as the input data with the addition of the
+    :return: return_data_df: The drive_data that will be returned. It is the same as the input drive_data with the addition of the
     :return: best_base_models_dict: A dictionary that contains the best base learners. The key is the model name and,
                                     the value is a tuple that contains the rank of the model and the model itself.
     :return: meta_model_tuple: A tuple that contains the best meta learner. The first element is the model name and,

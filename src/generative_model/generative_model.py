@@ -2,11 +2,13 @@ import copy
 
 import numpy as np
 
-from feature_extractor import extract_features, get_coord_list_matrix
-from maze_generation import complete_maze, random_maze_generator, plot_maze
-from prediction_model import PredictionModel
-from simulated_annealing import SA
-from tabu_search import TS
+from src.machine_learning import PredictionModel
+from src.maze_functions import (complete_maze,
+                                random_maze_generator,
+                                extract_features,
+                                get_coord_list_matrix)
+from .simulated_annealing import SA
+from .tabu_search import TS
 
 
 class GenerativeModel:
@@ -163,36 +165,3 @@ class GenerativeModel:
     def pretty_print_maze(maze: np.ndarray):
         for row in maze:
             print(" ".join(str(cell).rjust(4) for cell in row))
-
-
-if __name__ == '__main__':
-    PredictionModel = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
-                                      meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
-
-    STEP_SIZE_FACTOR = 0.5
-    SIDE_LENGTH = 20
-
-    DESIRED_RESISTANCE = 30
-    WIDTH = 0.05
-    HEIGHT = 0.05
-    FILLET_RADIUS = 0.04
-
-    TARGET_LOC_MODE = "north"  # east or north
-    METHOD = "TS"  # TS or SA
-
-    GenerativeModel = GenerativeModel(prediction_model=PredictionModel,
-                                      desired_resistance=DESIRED_RESISTANCE,
-                                      step_size_factor=STEP_SIZE_FACTOR,
-                                      width=WIDTH,
-                                      height=HEIGHT,
-                                      fillet_radius=FILLET_RADIUS,
-                                      target_loc_mode=TARGET_LOC_MODE,
-                                      method=METHOD,
-                                      side_length=SIDE_LENGTH)
-
-    MAZE, FITNESS = GenerativeModel.generate_maze()
-    GenerativeModel.pretty_print_maze(MAZE)
-    plot_maze(MAZE)
-
-    print(f"Desired resistance: {DESIRED_RESISTANCE}")
-    print(f"The resistance of the maze is: {GenerativeModel.predict_resistance(maze=MAZE)}, with fitness: {FITNESS}")

@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 from lazypredict.Supervised import LazyRegressor, LazyClassifier, REGRESSORS, CLASSIFIERS
 
-from src.error_metrics import MSE, RMSE, MAE, MAPE
+from .error_metrics import MSE, RMSE, MAE, MAPE
 
 
 def read_data(csv_files_paths: list[str]) -> pd.DataFrame:
     """
-    Read data from csv files and concatenate them into a single dataframe
+    Read drive_data from csv files and concatenate them into a single dataframe
     Drop rows with NaN values and reset index
     :param csv_files_paths: list of csv files paths
     :return: concatenated dataframe
@@ -47,9 +47,9 @@ def preprocess(data: pd.DataFrame,
 def train_test_split(data: pd.DataFrame,
                      frac_train: float) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Split the data into train and test data
+    Split the drive_data into train and test drive_data
     :param data: dataframe to be split
-    :param frac_train: fraction of the data to be used for training
+    :param frac_train: fraction of the drive_data to be used for training
     :return: train_data, test_data
     """
 
@@ -150,13 +150,13 @@ def get_comparison_df_for_base_models(base_models_dict: dict,
                                                  'Train_MAPE', 'Valid_MAPE', 'Time Taken'])
 
     for model_name, model in base_models_dict.items():
-        # predict the train data
+        # predict the train drive_data
         train_preds, train_mse, train_rmse, train_mae, train_mape = (
             predict_set_with_model(model,
                                    train_data[feature_column_names],
                                    train_data[target_column_name]))
 
-        # predict the valid data
+        # predict the valid drive_data
         valid_preds, valid_mse, valid_rmse, valid_mae, valid_mape = (
             predict_set_with_model(model,
                                    valid_data[feature_column_names],
@@ -246,7 +246,7 @@ def create_meta_learner_data(base_data: pd.DataFrame,
     meta_data = base_data.copy()
     len_DATA = len(meta_data)
 
-    # Calculate the error for each model for each data point
+    # Calculate the error for each model for each drive_data point
     for model_name in best_base_models_dict:
         model = best_base_models_dict[model_name][1]
 
@@ -258,7 +258,7 @@ def create_meta_learner_data(base_data: pd.DataFrame,
 
         meta_data[model_name] = diff_percentage
 
-    # Find the best model for each data point
+    # Find the best model for each drive_data point
     for i in range(len_DATA):
 
         error_values: dict[str, float] = {}
@@ -279,7 +279,7 @@ def create_meta_learner_data(base_data: pd.DataFrame,
         else:
             min_diff_model = min(error_values, key=error_values.get)
 
-        # add the best model for the data point
+        # add the best model for the drive_data point
         meta_data.loc[i, 'Best_Model'] = min_diff_model
 
     # drop the columns that are not needed anymore
@@ -345,9 +345,9 @@ def dump_all_chosen_models_to_pickle(base_learner_models_dict: dict,
 def save_outputs(output_path: str,
                  return_data_df: pd.DataFrame) -> None:
     """
-    Save the data to a csv file
+    Save the drive_data to a csv file
     :param output_path: path to save the outputs
-    :param return_data_df: data to be saved
+    :param return_data_df: drive_data to be saved
     :return: None
     """
     return_data_df.to_csv(f'{output_path}trained_data.csv', index=False)

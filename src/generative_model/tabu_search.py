@@ -6,7 +6,7 @@ from typing import Callable, Union, Optional
 
 from matplotlib import pyplot as plt
 
-from src.maze_generation import plot_maze
+from src.maze_functions import plot_maze
 
 
 def TS(init_method: Callable,
