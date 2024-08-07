@@ -21,7 +21,7 @@ def random_maze():
 
     maze = build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR,
                          width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
-    maze.show()
+    # maze.show()
 
     PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
                                        meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
@@ -37,13 +37,13 @@ def generate_desired_maze():
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
 
-    DESIRED_RESISTANCE = 30
+    DESIRED_RESISTANCE = 40
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
 
     TARGET_LOC_MODE = "east"  # east or north
-    METHOD = "TS"  # TS or SA
+    METHOD = "SA"  # TS or SA
 
     generative_model = GenerativeModel(prediction_model=prediction_model,
                                        desired_resistance=DESIRED_RESISTANCE,
@@ -66,5 +66,5 @@ def generate_desired_maze():
 
 
 if __name__ == '__main__':
-    # random_maze()
-    generate_desired_maze()
+    random_maze()
+    # generate_desired_maze()

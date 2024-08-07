@@ -4,7 +4,8 @@ from src.machine_learning import read_data, preprocess, train_test_split, train,
 
 if __name__ == '__main__':
     SIMULATION_RESULTS_CSVS_PATH: list[str] = ['drive_data/datasets/simulations/Simulation_Lib_5.csv',
-                                               'drive_data/datasets/simulations/Simulation_Lib_6.csv']
+                                               'drive_data/datasets/simulations/Simulation_Lib_6.csv',
+                                               'drive_data/datasets/simulations/longest_shortest_simulations.csv']
 
     ALL_DATA: pd.DataFrame = read_data(SIMULATION_RESULTS_CSVS_PATH)
     LEN_DATA = len(ALL_DATA)
