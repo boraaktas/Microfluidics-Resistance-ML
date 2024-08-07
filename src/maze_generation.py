@@ -6,6 +6,8 @@ import numpy as np
 from feature_extractor import extract_features, get_coord_list_matrix, get_coord_list_plot
 from prediction_model import PredictionModel
 
+from build_3D import build_3d_maze
+
 
 def is_valid_move(x: int, y: int, visited, maze, target_coords):
     """Check if the move is valid (within bounds and not a wall)."""
@@ -216,8 +218,11 @@ if __name__ == "__main__":
     FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
     print(FEATURES_DICT)
 
+    build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+
     PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='../data/pickles/base_learner_pickles/',
                                        meta_learner_pickle_path='../data/pickles/meta_learner_pickles/')
 
     RANDOM_MAZE_RESISTANCE = PREDICTION_MODEL.predict(FEATURES_DICT)
     print(f"The prediction resistance of the random maze is: {RANDOM_MAZE_RESISTANCE}")
+

@@ -20,4 +20,4 @@ numpy==2.0.0
 scikit-learn==1.5.0
 
 trimesh~=4.4.3  # pip install numpy trimesh numpy-stl
-pyglet~=2.0.16  # pip install pyglet==2.0.16, pip install "pyglet<2"
+pyglet~=1.5.29  # pip install pyglet==2.0.16, pip install "pyglet<2"
