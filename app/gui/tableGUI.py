@@ -42,7 +42,7 @@ class Table_Section:
             row = []
             for j in range(self.table_width):
                 button = ttk.Button(self.scrollable_frame,
-                                    image=self.table_images[self.table_obj.table[i][j].tile_type.value][1],
+                                    image=self.table_images[self.table_obj.table[i][j].tile_type.value][0],
                                     text="",
                                     bd=0)
                 button.grid(row=i, column=j, padx=0, pady=0, ipadx=0, ipady=0)
@@ -55,12 +55,12 @@ class Table_Section:
         self.table_obj.set_tile(x, y, self.main_gui.selected_tile)
 
         # Resize the image to cover the whole button
-        image = self.table_images[self.main_gui.selected_tile.tile_type.value][1]
+        image = self.table_images[self.main_gui.selected_tile.tile_type.value][0]
         self.buttons[x][y].config(image=image)
 
     def remove_tile(self, x, y):
         self.table_obj.set_tile(x, y, Tile())  # Set to empty tile
 
         # Resize the image to cover the whole button
-        image = self.table_images[0][1]  # Assuming the first image is the empty tile image
+        image = self.table_images[0][0]  # Assuming the first image is the empty tile image
         self.buttons[x][y].config(image=image)

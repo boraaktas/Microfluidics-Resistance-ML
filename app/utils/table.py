@@ -100,6 +100,26 @@ class Table:
 
         return exit_pressures
 
+    def find_divisions(self):
+        table = self.table
+        table_x = self.table_x
+        table_y = self.table_y
+
+        divisions = []
+        for i in range(table_x):
+            for j in range(table_y):
+                if (table[i][j].tile_type == TileType.DIVISION_2_FROM_EAST
+                        or table[i][j].tile_type == TileType.DIVISION_2_FROM_WEST
+                        or table[i][j].tile_type == TileType.DIVISION_2_FROM_NORTH
+                        or table[i][j].tile_type == TileType.DIVISION_2_FROM_SOUTH
+                        or table[i][j].tile_type == TileType.DIVISION_3):
+                    divisions.append(((i, j), table[i][j]))
+
+        # sort the exit pressures according to first the y coordinate then the x coordinate
+        divisions.sort(key=lambda x: (x[0][0], x[0][1]))
+
+        return divisions
+
     def transform_table(self):
 
         table_x = self.table_x

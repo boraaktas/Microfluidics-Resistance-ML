@@ -1,3 +1,5 @@
+import numpy as np
+
 from src.machine_learning import PredictionModel
 from src.generative_model import GenerativeModel
 from src.maze_functions import (random_maze_generator,
@@ -29,6 +31,8 @@ def random_maze():
     RANDOM_MAZE_RESISTANCE = PREDICTION_MODEL.predict(FEATURES_DICT)
     print(f"The prediction resistance of the random maze is: {RANDOM_MAZE_RESISTANCE}")
 
+    return MAZE
+
 
 def generate_desired_maze():
     prediction_model = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
@@ -43,7 +47,7 @@ def generate_desired_maze():
     FILLET_RADIUS = 0.04
 
     TARGET_LOC_MODE = "east"  # east or north
-    METHOD = "SA"  # TS or SA
+    METHOD = None  # TS or SA or None
 
     generative_model = GenerativeModel(prediction_model=prediction_model,
                                        desired_resistance=DESIRED_RESISTANCE,

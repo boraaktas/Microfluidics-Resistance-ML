@@ -2,6 +2,9 @@ import os
 import sys
 
 from PIL import Image, ImageTk
+from matplotlib import pyplot as plt
+
+from app.utils import TileType
 
 
 def resource_path(relative_path):
@@ -18,12 +21,12 @@ def resource_path(relative_path):
 
 def load_images():
     # Load images for the tiles
-    images = []
+    images: dict[int, (ImageTk.PhotoImage, Image.Image)] = {}
 
     for i in range(0, 22):
         image = Image.open(resource_path('data/app_images/' + str(i) + ".jpg"))
         # give the image a size according to the menu section
         image = image.resize((50, 50))
-        images.append((i, ImageTk.PhotoImage(image), image))
+        images[i] = (ImageTk.PhotoImage(image), image)
 
     return images

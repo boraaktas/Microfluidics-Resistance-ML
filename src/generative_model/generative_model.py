@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 
 import numpy as np
 
@@ -21,8 +22,8 @@ class GenerativeModel:
                  height: float,
                  fillet_radius: float,
                  target_loc_mode: str,
-                 method: str,
-                 side_length: int = 20
+                 method: Optional[str],
+                 side_length: float
                  ):
         self.PREDICTION_MODEL = prediction_model
         self.desired_resistance = desired_resistance
@@ -52,8 +53,11 @@ class GenerativeModel:
                           time_limit=100,
                           print_iteration=True)
 
+        elif self.method is None:
+            solution = self.initialization()
+
         else:
-            raise ValueError("method should be either 'TS' or 'SA'")
+            raise ValueError("method should be either 'TS' or 'SA' or None")
 
         return solution
 

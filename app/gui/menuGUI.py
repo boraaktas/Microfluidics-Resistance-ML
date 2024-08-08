@@ -27,7 +27,7 @@ class Menu_Section:
         tile_1 = Tile()
         tile_1.tile_type = TileType(1)
 
-        image_label_1 = ttk.Label(frame_1, image=self.tile_images[1][1])
+        image_label_1 = ttk.Label(frame_1, image=self.tile_images[1][0])
         image_label_1.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_1 = ttk.Button(frame_1,
@@ -44,7 +44,7 @@ class Menu_Section:
         tile_5 = Tile()
         tile_5.tile_type = TileType(5)
 
-        image_label_5 = ttk.Label(frame_5, image=self.tile_images[5][1])
+        image_label_5 = ttk.Label(frame_5, image=self.tile_images[5][0])
         image_label_5.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_5 = ttk.Button(frame_5,
@@ -61,7 +61,7 @@ class Menu_Section:
         tile_9 = Tile()
         tile_9.tile_type = TileType(9)
 
-        image_label_9 = ttk.Label(frame_9, image=self.tile_images[9][1])
+        image_label_9 = ttk.Label(frame_9, image=self.tile_images[9][0])
         image_label_9.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_9 = ttk.Button(frame_9,
@@ -78,7 +78,7 @@ class Menu_Section:
         tile_11 = Tile()
         tile_11.tile_type = TileType(11)
 
-        image_label_11 = ttk.Label(frame_11, image=self.tile_images[11][1])
+        image_label_11 = ttk.Label(frame_11, image=self.tile_images[11][0])
         image_label_11.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_11 = ttk.Button(frame_11,
@@ -95,7 +95,7 @@ class Menu_Section:
         tile_13 = Tile()
         tile_13.tile_type = TileType(13)
 
-        image_label_13 = ttk.Label(frame_13, image=self.tile_images[13][1])
+        image_label_13 = ttk.Label(frame_13, image=self.tile_images[13][0])
         image_label_13.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_13 = ttk.Button(frame_13,
@@ -112,7 +112,7 @@ class Menu_Section:
         tile_17 = Tile()
         tile_17.tile_type = TileType(17)
 
-        image_label_17 = ttk.Label(frame_17, image=self.tile_images[17][1])
+        image_label_17 = ttk.Label(frame_17, image=self.tile_images[17][0])
         image_label_17.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_17 = ttk.Button(frame_17,
@@ -129,7 +129,7 @@ class Menu_Section:
         tile_21 = Tile()
         tile_21.tile_type = TileType(21)
 
-        image_label_21 = ttk.Label(frame_21, image=self.tile_images[21][1])
+        image_label_21 = ttk.Label(frame_21, image=self.tile_images[21][0])
         image_label_21.grid(row=0, column=0, rowspan=2, padx=5)
 
         rotate_button_21 = ttk.Button(frame_21,
@@ -141,8 +141,8 @@ class Menu_Section:
 
     def rotate_tile(self, tile, image_label: ttk.Label):
         tile.rotate_tile()
-        image_label.config(image=self.tile_images[tile.tile_type.value][1])
-        image_label.image = self.tile_images[tile.tile_type.value][1]
+        image_label.config(image=self.tile_images[tile.tile_type.value][0])
+        image_label.image = self.tile_images[tile.tile_type.value][0]
         print("Tile rotated: ", tile.tile_type)
 
     def select_tile(self, tile):
