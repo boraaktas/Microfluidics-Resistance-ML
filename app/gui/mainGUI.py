@@ -1,19 +1,16 @@
 import io
-
 import tkinter as tk
 import traceback
 
 import numpy as np
 import ttkbootstrap as ttk
 from PIL import ImageTk, Image
-
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from .menuGUI import Menu_Section
-from .tableGUI import Table_Section
 from app.utils import load_images, Table, Tile, R_calculator, Q_calculator, ResistanceGenerator
 from src.maze_functions import plot_other_components
+from .menuGUI import Menu_Section
+from .tableGUI import Table_Section
 
 
 class Main_Section:
@@ -247,7 +244,7 @@ class Main_Section:
 
         RG = ResistanceGenerator()
 
-        ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float]] = {}
+        ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, Tile]] = {}
 
         entry_pressures = self.table_obj.find_entry_pressures()
         flow_rate_calculators = self.table_obj.find_flow_rate_calculators()
@@ -264,7 +261,8 @@ class Main_Section:
                                                         show_plot=False, shape=(20, 20))
 
             # TODO: Find the way that putting values of width, height, fillet_radius
-            ALL_GENERATED_COMPONENTS[cur_component_loc] = (np.empty((20, 20)), cur_component_image, -1, -1, -1)
+            ALL_GENERATED_COMPONENTS[cur_component_loc] = (np.empty((21, 21)), cur_component_image,
+                                                           -1, -1, -1, cur_component_type)
 
         for key in self.resistance_dict.keys():
             cell_res_value: float = key[0]
@@ -292,7 +290,7 @@ class Main_Section:
                                                                                      cur_cell_type)
 
                 ALL_GENERATED_COMPONENTS[cur_cell_loc] = (cur_cell_res_matrix, cur_cell_fig, pipe_width, pipe_height,
-                                                          pipe_fillet_radius)
+                                                          pipe_fillet_radius, cur_cell_type)
 
                 generated_cell_count.set(generated_cell_count.get() + 1)
                 popup.update()
@@ -326,10 +324,6 @@ class Main_Section:
 
         updated_most_lower_row = max([cell_loc[0] for cell_loc in updated_dict.keys()])
         updated_most_right_col = max([cell_loc[1] for cell_loc in updated_dict.keys()])
-
-        for key in updated_dict.keys():
-            print(key, updated_dict[key][0].shape, updated_dict[key][1], updated_dict[key][2],
-                  updated_dict[key][3], updated_dict[key][4])
 
         popup = tk.Toplevel()
         popup.title("Generated Circuit")
@@ -391,7 +385,7 @@ class Main_Section:
                 img_label.grid(row=i, column=j, padx=0, pady=0)
 
         for cell_loc in updated_dict.keys():
-            cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius = updated_dict[cell_loc]
+            cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type = updated_dict[cell_loc]
             row, col = cell_loc  # Assuming cell_loc is a tuple (x, y)
 
             resized_image = self.resize_figure(cell_fig, image_size)
@@ -401,12 +395,25 @@ class Main_Section:
             img_label.image = img  # Keep a reference to avoid garbage collection
             img_label.grid(row=row, column=col, padx=0, pady=0)
 
+        dict_for_3d_model = {}
+        max_x = max([cell_loc[0] for cell_loc in updated_dict.keys()])
+        max_y = max([cell_loc[1] for cell_loc in updated_dict.keys()])
+        for key in updated_dict.keys():
+            new_key = (key[1], max_x - key[0])
+            dict_for_3d_model[new_key] = updated_dict[key]
+
         # Add the download button outside the scrollable frame
         download_button = ttk.Button(main_frame, text="Download 3D Model",
-                                     command=lambda: self.download_3d_model(updated_dict))
+                                     command=lambda: self.download_3d_model(dict_for_3d_model))
         download_button.pack(side="bottom", pady=10)
 
-    def download_3d_model(self, ALL_GENERATED_COMPONENTS_UPDATED):
+    def download_3d_model(self, DICT_FOR_3D_MODEL):
+
+        for key in DICT_FOR_3D_MODEL.keys():
+            print(key, DICT_FOR_3D_MODEL[key][0].shape, DICT_FOR_3D_MODEL[key][1],
+                  DICT_FOR_3D_MODEL[key][2],
+                  DICT_FOR_3D_MODEL[key][3], DICT_FOR_3D_MODEL[key][4],
+                  DICT_FOR_3D_MODEL[key][5])
 
         popup = tk.Toplevel()
         popup.title("Download Options")
