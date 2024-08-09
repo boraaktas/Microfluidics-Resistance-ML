@@ -67,18 +67,16 @@ class GenerativeModel:
         :return: random_maze: The randomly generated maze.
         """
 
-        """
         if self.desired_resistance < 10:
             path_finding_mode = "shortest"
         elif self.desired_resistance > 50:
             path_finding_mode = "longest"
         else:
             path_finding_mode = "random"
-        """
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="random")
+                                            path_finding_mode=path_finding_mode)
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness

@@ -444,6 +444,10 @@ class Main_Section:
         progress_bar = ttk.Progressbar(popup, maximum=100, length=300)
         progress_bar.pack(pady=10)
 
+        # Constants
+        base_height = 1
+        base_side = 10
+
         # Read the dictionary and create a 3D model
         max_x = max([cell_loc[0] for cell_loc in DICT_FOR_3D_MODEL.keys()])
         max_y = max([cell_loc[1] for cell_loc in DICT_FOR_3D_MODEL.keys()])
@@ -453,11 +457,12 @@ class Main_Section:
             for j in range(max_y + 1):
                 if (i, j) in DICT_FOR_3D_MODEL.keys():
                     cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type = DICT_FOR_3D_MODEL[(i, j)]
+                    cell_type_str = str(cell_type).split(".")[1]
 
                     if pipe_width != -1 and pipe_height != -1 and pipe_fillet_radius != -1:
 
                         # Build a base under the maze_3d
-                        base = trimesh.creation.box(extents=[10, 10, 1])
+                        base = trimesh.creation.box(extents=[base_side, base_side, base_height])
                         # Make the base white
                         base.visual.face_colors = [255, 255, 255, 255]
 
@@ -467,7 +472,7 @@ class Main_Section:
                                                 height=pipe_height,
                                                 fillet_radius=pipe_fillet_radius)
 
-                        maze_3d.apply_translation([-5, -5, 0.5])
+                        maze_3d.apply_translation([(-base_side / 2), (-base_side / 2), (base_height / 2)])
                         maze_3d = trimesh.util.concatenate([maze_3d, base])
 
                         model_3d_dict[(i, j)] = maze_3d
@@ -476,21 +481,21 @@ class Main_Section:
                         pipe_width = 0.05
                         pipe_height = 0.05
 
-                        imported_component = import_stl(cell_type_str=str(cell_type).split(".")[1],
+                        imported_component = import_stl(cell_type_str=cell_type_str,
                                                         coming_direction=None,
                                                         width=pipe_width,
                                                         height=pipe_height)
 
                         imported_component.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2,
                                                                                                    [1, 0, 0]))
-                        imported_component.apply_translation([-5, 5, -0.5])
+                        imported_component.apply_translation([(-base_side / 2), (base_side / 2), (-base_height / 2)])
 
                         model_3d_dict[(i, j)] = imported_component
 
                 elif (i, j) not in DICT_FOR_3D_MODEL.keys():
 
                     # Build a base under the empty_cell
-                    base = trimesh.creation.box(extents=[10, 10, 1])
+                    base = trimesh.creation.box(extents=[base_side, base_side, base_height])
                     # Make the base white
                     base.visual.face_colors = [255, 255, 255, 255]
 
@@ -498,7 +503,7 @@ class Main_Section:
 
         # Scaled the keys of the model_3d_dict
         for key in model_3d_dict.keys():
-            model_3d_dict[key] = (model_3d_dict[key], key[0] * 10, key[1] * 10)
+            model_3d_dict[key] = (model_3d_dict[key], key[0] * base_side, key[1] * base_side)
 
         # Move the every component to the key coordinates
         for key in model_3d_dict.keys():
@@ -509,16 +514,32 @@ class Main_Section:
         for key in model_3d_dict.keys():
             combined_model = trimesh.util.concatenate([combined_model, model_3d_dict[key][0]])
 
-        """# Delete under the base of the combined_model
-        delete_box = trimesh.creation.box(extents=[(max_x*10 + 25), (max_y*10 + 25), 1])
-        delete_box.apply_translation([max_x*5, max_y*5, 0])
-        delete_box.visual.face_colors = [255, 0, 0, 255]
+        # Building the walls
+        small_wall_height = 0.4
+        small_wall_thickness = 0.5
+        small_inside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side), ((max_y + 1)*base_side), (base_height + small_wall_height)])
+        small_outside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness), (base_height + small_wall_height)])
+        small_wall = small_outside_wall.difference(small_inside_wall)
+        small_wall.apply_translation([max_x*5, max_y*5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
 
-        combined_model = combined_model.difference(delete_box)
+        dist_big_small = 2.5
+        bottom_outer= trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small), base_height])
+        bottom_inner = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness), base_height])
+        bottom = bottom_outer.difference(bottom_inner)
+        bottom.visual.face_colors = [255, 255, 255, 255]
+        bottom.apply_translation([max_x*5, max_y*5, 0])
 
-        # Add the same box to the combined_model as a white color
-        delete_box.visual.face_colors = [255, 255, 255, 255]
-        combined_model = trimesh.util.concatenate([combined_model, delete_box])"""
+        big_wall_height = 3.7
+        big_wall_thickness = 1
+        big_inside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small), (base_height + big_wall_height)])
+        big_outside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small + big_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small + big_wall_thickness), (base_height + big_wall_height)])
+        big_wall = big_outside_wall.difference(big_inside_wall)
+        big_wall.apply_translation([max_x*5, max_y*5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
+
+        walls = trimesh.util.concatenate([small_wall, bottom, big_wall])
+
+        # Combine the walls with the combined_model
+        combined_model = trimesh.util.concatenate([combined_model, walls])
 
         combined_model.show()
 

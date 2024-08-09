@@ -193,11 +193,11 @@ def build_3d_maze(maze: np.ndarray,
 
     return maze_mesh
 
+
 def import_stl(cell_type_str: str,
                coming_direction: Optional[str],
                width: float,
                height: float) -> trimesh.Trimesh:
-
     stl_folder = 'data/STL/'
 
     file_cell_type_str = ""
@@ -229,7 +229,7 @@ def import_stl(cell_type_str: str,
     else:
         raise ValueError(f"Invalid cell type: {cell_type_str}")
 
-    width_height_str = f"w{int(width*100)}_h{int(height*100)}"
+    width_height_str = f"w{int(width * 100)}_h{int(height * 100)}"
 
     if file_type_str == "":
         file_path = f"{stl_folder}{file_cell_type_str}_{width_height_str}.STL"
@@ -238,14 +238,50 @@ def import_stl(cell_type_str: str,
 
     # Load the mesh from the file path to the origin (0, 0, 0) of the world
     mesh = trimesh.load_mesh(file_path)
-    return mesh
+
+    # Copy the mesh to avoid modifying the original
+    mesh_rotated = mesh.copy()
+    # Rotate the mesh to the correct orientation
+    if file_cell_type_str == "START_END":
+        if cell_direction_str == "NORTH":
+            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
+        elif cell_direction_str == "SOUTH":
+            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
+        elif cell_direction_str == "WEST":
+            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+        elif cell_direction_str == "EAST":
+            pass
+
+    elif file_cell_type_str == "DIVISION_3":
+        pass
+
+    elif file_cell_type_str == "DIVISION_2":
+        if file_type_str == "t1":
+            if coming_direction == "EAST":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+            elif coming_direction == "WEST":
+                pass
+            elif coming_direction == "SOUTH":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
+            elif coming_direction == "NORTH":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
+        elif file_type_str == "t2":
+            pass
+
+    elif file_cell_type_str == "FLOW_RATE":
+        if cell_direction_str == "HORIZONTAL":
+            pass
+        elif cell_direction_str == "VERTICAL":
+            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+
+    # Return the position before the rotation
+    mesh_centroid = mesh.centroid
+    mesh_rotated_centroid = mesh_rotated.centroid
+    mesh_rotated.apply_translation(mesh_centroid - mesh_rotated_centroid)
+
+    return mesh_rotated
 
 
 if __name__ == '__main__':
     example_mesh = import_stl("DIVISION_2_FROM_EAST", None, 0.05, 0.05)
     example_mesh.show()
-
-
-
-
-
