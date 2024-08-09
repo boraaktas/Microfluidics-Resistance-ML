@@ -11,6 +11,9 @@ from app.utils import load_images, Table, Tile, R_calculator, Q_calculator, Resi
 from src.maze_functions import plot_other_components
 from .menuGUI import Menu_Section
 from .tableGUI import Table_Section
+from src.modelling_3D.build_3D import build_3d_maze, import_stl
+import trimesh
+from trimesh.creation import box, cylinder
 
 
 class Main_Section:
@@ -440,3 +443,97 @@ class Main_Section:
         # put a progress bar
         progress_bar = ttk.Progressbar(popup, maximum=100, length=300)
         progress_bar.pack(pady=10)
+
+        # Read the dictionary and create a 3D model
+        max_x = max([cell_loc[0] for cell_loc in DICT_FOR_3D_MODEL.keys()])
+        max_y = max([cell_loc[1] for cell_loc in DICT_FOR_3D_MODEL.keys()])
+
+        model_3d_dict = {}
+        for i in range(max_x + 1):
+            for j in range(max_y + 1):
+                if (i, j) in DICT_FOR_3D_MODEL.keys():
+                    cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type = DICT_FOR_3D_MODEL[(i, j)]
+
+                    if pipe_width != -1 and pipe_height != -1 and pipe_fillet_radius != -1:
+
+                        # Build a base under the maze_3d
+                        base = trimesh.creation.box(extents=[10, 10, 1])
+                        # Make the base white
+                        base.visual.face_colors = [255, 255, 255, 255]
+
+                        maze_3d = build_3d_maze(maze=cell_res_matrix,
+                                                step_size_factor=0.5,
+                                                width=pipe_width,
+                                                height=pipe_height,
+                                                fillet_radius=pipe_fillet_radius)
+
+                        maze_3d.apply_translation([-5, -5, 0.5])
+                        maze_3d = trimesh.util.concatenate([maze_3d, base])
+
+                        model_3d_dict[(i, j)] = maze_3d
+
+                    else:
+                        pipe_width = 0.05
+                        pipe_height = 0.05
+
+                        imported_component = import_stl(cell_type_str=str(cell_type).split(".")[1],
+                                                        coming_direction=None,
+                                                        width=pipe_width,
+                                                        height=pipe_height)
+
+                        imported_component.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2,
+                                                                                                   [1, 0, 0]))
+                        imported_component.apply_translation([-5, 5, -0.5])
+
+                        model_3d_dict[(i, j)] = imported_component
+
+                elif (i, j) not in DICT_FOR_3D_MODEL.keys():
+
+                    # Build a base under the empty_cell
+                    base = trimesh.creation.box(extents=[10, 10, 1])
+                    # Make the base white
+                    base.visual.face_colors = [255, 255, 255, 255]
+
+                    model_3d_dict[(i, j)] = base
+
+        # Scaled the keys of the model_3d_dict
+        for key in model_3d_dict.keys():
+            model_3d_dict[key] = (model_3d_dict[key], key[0] * 10, key[1] * 10)
+
+        # Move the every component to the key coordinates
+        for key in model_3d_dict.keys():
+            model_3d_dict[key][0].apply_translation([model_3d_dict[key][1], model_3d_dict[key][2], 0])
+
+        # Combine all the components
+        combined_model = trimesh.Trimesh()
+        for key in model_3d_dict.keys():
+            combined_model = trimesh.util.concatenate([combined_model, model_3d_dict[key][0]])
+
+        """# Delete under the base of the combined_model
+        delete_box = trimesh.creation.box(extents=[(max_x*10 + 25), (max_y*10 + 25), 1])
+        delete_box.apply_translation([max_x*5, max_y*5, 0])
+        delete_box.visual.face_colors = [255, 0, 0, 255]
+
+        combined_model = combined_model.difference(delete_box)
+
+        # Add the same box to the combined_model as a white color
+        delete_box.visual.face_colors = [255, 255, 255, 255]
+        combined_model = trimesh.util.concatenate([combined_model, delete_box])"""
+
+        combined_model.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

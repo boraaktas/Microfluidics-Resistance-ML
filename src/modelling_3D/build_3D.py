@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import trimesh
 from trimesh.creation import box, cylinder
@@ -141,6 +143,9 @@ def build_3d_maze(maze: np.ndarray,
     # Shift the maze to the correct position
     maze_mesh.apply_translation([0, 0, height / 2])
 
+    if len(corners) == 0:
+        return maze_mesh
+
     # Clear the corner areas to make space for the fillets
     inner_radius = (fillet_radius - width / 2)
     outer_radius = inner_radius + width
@@ -184,20 +189,63 @@ def build_3d_maze(maze: np.ndarray,
     # Combine the maze mesh with the fillet mesh
     maze_mesh = trimesh.util.concatenate([maze_mesh, fillet_mesh])
 
-    # Import the stl base from the folder
-    base = trimesh.load_mesh('data/STL/base.STL')
-
-    # Change the color of the base to white
-    base.visual.face_colors = [255, 255, 255, 255]
-
-    # Rotate the base 90 degrees around the x-axis and shift it up
-    base.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
-    base.apply_translation([0, 10, -1])
-
-    # Combine the maze mesh with the base
-    maze_mesh.apply_translation([0, 0, 0])
-    maze_mesh = trimesh.util.concatenate([base, maze_mesh])
-
-    maze_mesh.show()
+    # maze_mesh.show()
 
     return maze_mesh
+
+def import_stl(cell_type_str: str,
+               coming_direction: Optional[str],
+               width: float,
+               height: float) -> trimesh.Trimesh:
+
+    stl_folder = 'data/STL/'
+
+    file_cell_type_str = ""
+    file_type_str = ""
+
+    cell_direction_str = ""
+
+    if "START" in cell_type_str or "END" in cell_type_str:
+        file_cell_type_str = "START_END"
+        if "START" in cell_type_str:
+            cell_direction_str = cell_type_str.split("_")[1]
+        else:
+            cell_direction_str = cell_type_str.split("_")[0]
+
+    elif "DIVISION_3" in cell_type_str:
+        file_cell_type_str = "DIVISION_3"
+    elif "DIVISION_2" in cell_type_str:
+        file_cell_type_str = "DIVISION_2"
+        cell_direction_str = cell_type_str.split("_")[3]
+
+        file_type_str = "t1"
+
+    elif "FLOW_RATE_CALCULATOR" in cell_type_str:
+        file_cell_type_str = "FLOW_RATE"
+        cell_direction_str = cell_type_str.split("_")[3]
+
+        file_type_str = "v9"
+
+    else:
+        raise ValueError(f"Invalid cell type: {cell_type_str}")
+
+    width_height_str = f"w{int(width*100)}_h{int(height*100)}"
+
+    if file_type_str == "":
+        file_path = f"{stl_folder}{file_cell_type_str}_{width_height_str}.STL"
+    else:
+        file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{width_height_str}.STL"
+
+    # Load the mesh from the file path to the origin (0, 0, 0) of the world
+    mesh = trimesh.load_mesh(file_path)
+    return mesh
+
+
+if __name__ == '__main__':
+    example_mesh = import_stl("DIVISION_2_FROM_EAST", None, 0.05, 0.05)
+    example_mesh.show()
+
+
+
+
+
