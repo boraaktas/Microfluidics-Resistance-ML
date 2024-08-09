@@ -1,7 +1,5 @@
-import numpy as np
-
-from src.machine_learning import PredictionModel
 from src.generative_model import GenerativeModel
+from src.machine_learning import PredictionModel
 from src.maze_functions import (random_maze_generator,
                                 extract_features,
                                 plot_maze)
