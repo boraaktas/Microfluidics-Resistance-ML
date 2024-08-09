@@ -23,7 +23,7 @@ def random_maze():
 
     maze = build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR,
                          width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
-    # maze.show()
+    maze.show()
 
     PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
                                        meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
