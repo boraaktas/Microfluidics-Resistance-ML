@@ -242,6 +242,7 @@ def import_stl(cell_type_str: str,
     # Copy the mesh to avoid modifying the original
     mesh_rotated = mesh.copy()
     # Rotate the mesh to the correct orientation
+    print(file_cell_type_str + " " + cell_direction_str)
     if file_cell_type_str == "START_END":
         if cell_direction_str == "NORTH":
             mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
@@ -257,13 +258,13 @@ def import_stl(cell_type_str: str,
 
     elif file_cell_type_str == "DIVISION_2":
         if file_type_str == "t1":
-            if coming_direction == "EAST":
+            if cell_direction_str == "EAST":
                 mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
-            elif coming_direction == "WEST":
+            elif cell_direction_str == "WEST":
                 pass
-            elif coming_direction == "SOUTH":
+            elif cell_direction_str == "SOUTH":
                 mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
-            elif coming_direction == "NORTH":
+            elif cell_direction_str == "NORTH":
                 mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
         elif file_type_str == "t2":
             pass
@@ -272,7 +273,7 @@ def import_stl(cell_type_str: str,
         if cell_direction_str == "HORIZONTAL":
             pass
         elif cell_direction_str == "VERTICAL":
-            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+            mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
 
     # Return the position before the rotation
     mesh_centroid = mesh.centroid
