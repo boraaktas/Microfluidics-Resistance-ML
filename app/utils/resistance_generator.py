@@ -7,16 +7,14 @@ from .tile_type import TileType
 
 
 class ResistanceGenerator:
-    __BASE_LEARNERS_PATH = 'drive_data/pickles/base_learner_pickles/'
-    __META_LEARNER_PATH = 'drive_data/pickles/meta_learner_pickles/'
 
-    def __init__(self: 'ResistanceGenerator'):
+    def __init__(self: 'ResistanceGenerator',
+                 prediction_model: PredictionModel):
         """
         Initializes the ResistanceGenerator object.
         """
 
-        self.prediction_model = PredictionModel(ResistanceGenerator.__BASE_LEARNERS_PATH,
-                                                ResistanceGenerator.__META_LEARNER_PATH)
+        self.prediction_model = prediction_model
 
     def generate_resistance(self: 'ResistanceGenerator',
                             desired_resistance: float,
@@ -48,7 +46,7 @@ class ResistanceGenerator:
                                            height=height,
                                            fillet_radius=fillet_radius,
                                            target_loc_mode=target_loc_mode,
-                                           method=None,
+                                           method="TS",
                                            side_length=side_length)
 
         cell_resistance = generative_model.generate_maze()

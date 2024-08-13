@@ -16,7 +16,7 @@ jupyter==1.0.0
 lazypredict==0.2.12  # IMPORTANT: from Supervised.py line 98 change 'sparse=False' to 'sparse_output=False'
 matplotlib==3.9.0
 pandas==2.2.2
-numpy==2.0.1
+numpy==1.24.3
 scikit-learn==1.5.0
 
 trimesh~=4.4.3  # pip install numpy trimesh numpy-stl
@@ -26,3 +26,4 @@ manifold3d~=2.5.1
 ttkbootstrap==1.10.1
 pillow==10.4.0
 cplex==22.1.1.2
+pyomo==6.7.3

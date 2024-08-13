@@ -3,17 +3,17 @@ import tkinter as tk
 import traceback
 
 import numpy as np
+import trimesh
 import ttkbootstrap as ttk
 from PIL import ImageTk, Image
 from matplotlib import pyplot as plt
 
-from app.utils import load_images, Table, Tile, R_calculator, Q_calculator, ResistanceGenerator
+from app.utils import (load_images, load_res_bounds, load_prediction_model,
+                       Table, Tile, R_calculator, Q_calculator, ResistanceGenerator)
 from src.maze_functions import plot_other_components
+from src.modelling_3D.build_3D import build_3d_maze, import_stl
 from .menuGUI import Menu_Section
 from .tableGUI import Table_Section
-from src.modelling_3D.build_3D import build_3d_maze, import_stl
-import trimesh
-from trimesh.creation import box, cylinder
 
 
 class Main_Section:
@@ -33,6 +33,8 @@ class Main_Section:
         self.root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_coordinate, y_coordinate))
 
         self.images = load_images()
+        self.res_bounds = load_res_bounds()
+        self.prediction_model = load_prediction_model()
 
         self.table_length = length
         self.table_width = width
@@ -196,7 +198,7 @@ class Main_Section:
         success_resistances = False
         if success_flow_rates:
             try:
-                self.resistance_dict = R_calculator(self.transformed_table)
+                self.resistance_dict = R_calculator(self.transformed_table, self.res_bounds)
                 for key in self.resistance_dict.keys():
                     print(f"{key}: {self.resistance_dict[key]}")
                 success_resistances = True
@@ -245,7 +247,7 @@ class Main_Section:
         progress_bar = ttk.Progressbar(popup, maximum=total_cell_count, variable=generated_cell_count, length=300)
         progress_bar.pack(pady=10)
 
-        RG = ResistanceGenerator()
+        RG = ResistanceGenerator(self.prediction_model)
 
         ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, Tile]] = {}
 
@@ -269,10 +271,10 @@ class Main_Section:
 
         for key in self.resistance_dict.keys():
             cell_res_value: float = key[0]
-            cell_target_loc_mode: str = "east" if key[1] == 'STRAIGHT' else "north"
-            pipe_width = 0.05
-            pipe_height = 0.05
-            pipe_fillet_radius = 0.04
+            cell_target_loc_mode: str = "east" if key[2] == 'STRAIGHT' else "north"
+            pipe_width = self.res_bounds[key[1]]['Width']
+            pipe_height = self.res_bounds[key[1]]['Height']
+            pipe_fillet_radius = self.res_bounds[key[1]]['Fillet_Radius']
             cell_step_size_factor = 0.5
             cell_side_length = 20
 

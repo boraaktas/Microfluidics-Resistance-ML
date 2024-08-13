@@ -1,4 +1,5 @@
-import cplex
+import pyomo.environ as pyo
+from pyomo.environ import ConcreteModel, Var, Objective, SolverFactory, Constraint, RangeSet, minimize, value
 
 from .constants import Constants
 from .tile_type import TileType
@@ -277,84 +278,226 @@ def create_matrix(circuit):
     return A, b, x, RLS_and_RCS_COUNT
 
 
-def calculate_resistance_with_cplex(circuit,
-                                    add_objective=True):
+def calculate_resistance_via_optimization(circuit,
+                                          resistance_bounds,
+                                          obj_type="farthest_to_lb",
+                                          start_num=None,
+                                          end_num=None):
     A, b, x, RLS_and_RCS_COUNT = create_matrix(circuit)
 
-    # create the model
-    model = cplex.Cplex()
-    model.set_results_stream(None)
-    model.set_warning_stream(None)
-    model.set_error_stream(None)
+    if obj_type not in ["diff_min_max", "farthest_to_avg", "farthest_to_lb", "farthest_to_ub"]:
+        raise ValueError("obj_type should be one of the following: diff_min_max, farthest_to_avg, "
+                         "farthest_to_avg_lb, farthest_to_avg_ub")
 
-    # add variables
-    for i in range(len(x)):
+    farthest_type = None
+    if obj_type.startswith("farthest"):
+        farthest_type = obj_type.split("_")[-1]
+
+    if start_num is None:
+        start_num = 0
+    if end_num is None:
+        end_num = len(resistance_bounds)
+
+    resistance_bounds = dict(list(resistance_bounds.items())[start_num:end_num])
+
+    all_upper_bounds = [resistance_bounds[i]['ub'] for i in resistance_bounds]
+    all_lower_bounds = [resistance_bounds[i]['lb'] for i in resistance_bounds]
+
+    # Create a Pyomo model
+    model = ConcreteModel("ResistanceCalculator")
+
+    # Define sets
+    model.i = RangeSet(0, len(x) - 1)  # index for x
+    model.j = RangeSet(min(resistance_bounds.keys()), max(resistance_bounds.keys()))  # index for combination
+
+    # Define variables
+    for i in model.i:
         x_i = x[i]
-        # if x_i starts with P, it is a pressure, and there is no upper bound
         if x_i[0] == 'P':
-            model.variables.add(obj=[0],
-                                lb=[0],
-                                names=[x_i])
-        # if x_i starts with R, it is a resistance, then it should be greater than 1 and less than 60
+            for j in model.j:
+                model.add_component(f"{x_i}_{j}", Var(domain=pyo.NonNegativeReals))
         else:
-            if x_i in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x_i] == 0:
-                model.variables.add(obj=[0],
-                                    lb=[0],
-                                    ub=[0],
-                                    names=[x_i])
-            else:
-                model.variables.add(obj=[0],
-                                    lb=[1],
-                                    ub=[70],
-                                    names=[x_i])
+            for j in model.j:
+                if x_i in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x_i] == 0:
+                    model.add_component(f"{x_i}_{j}", Var(domain=pyo.NonNegativeReals,
+                                                          bounds=(0, 0)))
+                elif x_i in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x_i] > 0:
+                    model.add_component(f"{x_i}_{j}", Var(domain=pyo.NonNegativeReals,
+                                                          bounds=(0, resistance_bounds[j]['ub'])))
+                else:
+                    model.add_component(f"{x_i}_{j}", Var(domain=pyo.NonNegativeReals))
 
-    # add a variable to save the maximum resistance value
-    max_resistance_var = 'max_resistance'
-    model.variables.add(obj=[0], lb=[0], ub=[70], names=[max_resistance_var])
+    # Define combination variables as binary
+    for j in model.j:
+        model.add_component(f"combination_{j}", Var(domain=pyo.Binary))
 
-    # add a variable to save the minimum resistance value
-    min_resistance_var = 'min_resistance'
-    model.variables.add(obj=[0], lb=[0], ub=[70], names=[min_resistance_var])
+        # add max_resistance and min_resistance variables for each combination
+        if obj_type == "diff_min_max":
+            model.add_component(f"max_resistance_{j}",
+                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
+            model.add_component(f"min_resistance_{j}",
+                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
+        elif obj_type.startswith("farthest"):
+            model.add_component(f"farthest_{j}",
+                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
 
-    # add constraints
-    for i in range(len(A)):
-        model.linear_constraints.add(lin_expr=[[[x[j] for j in range(len(x))], A[i]]],
-                                     senses=['E'],
-                                     rhs=[b[i]])
+    if obj_type == "diff_min_max":
+        model.add_component("max_resistance",
+                            Var(domain=pyo.NonNegativeReals, bounds=(min(all_lower_bounds), max(all_upper_bounds))))
+        model.add_component("min_resistance",
+                            Var(domain=pyo.NonNegativeReals, bounds=(min(all_lower_bounds), max(all_upper_bounds))))
+    elif obj_type.startswith("farthest"):
+        model.add_component("farthest", Var(domain=pyo.NonNegativeReals, bounds=(0, max(all_upper_bounds))))
 
-    # add constraints to find the maximum and minimum resistance values
-    for i in range(len(x)):
-        if x[i][:2] == 'RC' or x[i][:2] == 'RL':
-            if x[i] in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x[i]] == 0:
-                continue
-            # max_resistance >= R[i]
-            model.linear_constraints.add(lin_expr=[[[max_resistance_var, x[i]], [1, -1]]],
-                                         senses=['G'],
-                                         rhs=[0])
-            # min_resistance <= R[i]
-            model.linear_constraints.add(lin_expr=[[[min_resistance_var, x[i]], [1, -1]]],
-                                         senses=['L'],
-                                         rhs=[0])
+    # Add constraints
+    model.combination_constraint = Constraint(expr=sum(getattr(model, f"combination_{m_j}") for m_j in model.j) == 1)
 
-    # set the objective
-    # set objective as the difference between the maximum and minimum resistance values in the circuit to minimize it
-    if add_objective:
-        model.variables.add(obj=[1], names=['obj_diff'])
-        model.linear_constraints.add(lin_expr=[[[max_resistance_var, min_resistance_var, 'obj_diff'], [1, -1, -1]]],
-                                     senses=['E'],
-                                     rhs=[0])
-        model.objective.set_name('obj_diff')
-    model.objective.set_sense(model.objective.sense.minimize)
+    # add upper and lower bounds for each resistance
+    for i in model.i:
+        x_i = x[i]
+        if x_i in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x_i] > 0:
+            for j in model.j:
+                model.add_component(f"upper_bound_{x_i}_{j}",
+                                    Constraint(expr=getattr(
+                                        model, f"{x_i}_{j}") <= resistance_bounds[j]['ub'] * getattr(
+                                        model, f"combination_{j}")))
+                model.add_component(f"lower_bound_{x_i}_{j}",
+                                    Constraint(expr=getattr(
+                                        model, f"{x_i}_{j}") >= resistance_bounds[j]['lb'] * getattr(
+                                        model, f"combination_{j}")))
 
-    # solve the model
-    model.solve()
+    # Add A matrix constraints for each combination
+    for j in model.j:
+        for i in range(len(A)):
+            model.add_component(f"A_constraint_{i}_{j}",
+                                Constraint(expr=sum(A[i][k] * getattr(model, f"{x[k]}_{j}") for k in model.i)
+                                                == b[i] * getattr(model, f"combination_{j}")))
 
-    # get the results
+    # Set max_resistance and min_resistance
+    for j in model.j:
+        # max resistance should be greater than or equal to all resistances in the combination
+        for i in model.i:
+            if x[i] in RLS_and_RCS_COUNT and RLS_and_RCS_COUNT[x[i]] > 0:
+                if obj_type == "diff_min_max":
+                    model.add_component(f"max_resistance_constraint_{i}_{j}",
+                                        Constraint(expr=getattr(model, f"max_resistance_{j}") >= getattr(
+                                            model, f"{x[i]}_{j}")))
+                    model.add_component(f"min_resistance_constraint_{i}_{j}",
+                                        Constraint(expr=getattr(model, f"min_resistance_{j}") <= getattr(
+                                            model, f"{x[i]}_{j}")))
+                elif obj_type.startswith("farthest"):
+                    # farthest_j is the farthest resistance in the combination from the average of this combination
+                    # the distance between a point and the average is calculated by the absolute difference
+                    model.add_component(f"farthest_constraint_{i}_{j}_1",
+                                        Constraint(expr=getattr(model, f"{x[i]}_{j}") - getattr(
+                                            model, f"farthest_{j}") <= resistance_bounds[j][farthest_type] * getattr(
+                                            model, f"combination_{j}")))
+                    model.add_component(f"farthest_constraint_{i}_{j}_2",
+                                        Constraint(expr=getattr(model, f"{x[i]}_{j}") + getattr(
+                                            model, f"farthest_{j}") >= resistance_bounds[j][farthest_type] * getattr(
+                                            model, f"combination_{j}")))
+
+        # max resistance should be maximum of all max_resistance variables
+        if obj_type == "diff_min_max":
+            model.add_component(f"max_resistance_constraint_{j}",
+                                Constraint(
+                                    expr=getattr(model, f"max_resistance_{j}") <= getattr(model, f"max_resistance")))
+            model.add_component(f"min_resistance_constraint_{j}",
+                                Constraint(
+                                    expr=getattr(model, f"min_resistance_{j}") <= getattr(model, f"min_resistance")))
+
+            model.add_component(f"min_max_resistance_constraint_{j}",
+                                Constraint(expr=getattr(model, f"min_resistance_{j}") <= getattr(
+                                    model, f"max_resistance_{j}")))
+
+            model.add_component(f"min_resistance_constraint_minimum_{j}",
+                                Constraint(
+                                    expr=getattr(model, f"min_resistance_{j}") >= resistance_bounds[j]['lb'] * getattr(
+                                        model, f"combination_{j}")))
+            model.add_component(f"max_resistance_constraint_maximum_{j}",
+                                Constraint(
+                                    expr=getattr(model, f"max_resistance_{j}") <= resistance_bounds[j]['ub'] * getattr(
+                                        model, f"combination_{j}")))
+
+        elif obj_type.startswith("farthest"):
+            model.add_component(f"farthest_constraint_{j}",
+                                Constraint(expr=getattr(model, f"farthest_{j}") <= getattr(model, f"farthest")))
+
+    if obj_type == "diff_min_max":
+        model.add_component("min_max_resistance_constraint",
+                            Constraint(expr=model.min_resistance <= model.max_resistance))
+
+    # Define the objective function
+    if obj_type == "diff_min_max":
+        model.obj = Objective(expr=model.max_resistance + model.min_resistance, sense=minimize)
+    elif obj_type.startswith("farthest"):
+        model.obj = Objective(expr=model.farthest, sense=minimize)
+
+    # Solve the model
+    solver = SolverFactory('glpk')
+
+    # write the model to a file by using variables with the same name
+    # model.write(filename="resistance_calculator.lp", io_options = {"symbolic_solver_labels":True})
+
+    result = solver.solve(model, tee=True)
+
+    # Check the solver status
+    if result.solver.status != pyo.SolverStatus.ok:
+        raise ValueError("Check the solver status")
+    if result.solver.termination_condition != pyo.TerminationCondition.optimal:
+        raise ValueError("Check the solver termination condition")
+
+    # Get the results rounded to 4 decimal places
     results = {}
-    for i in range(len(x)):
-        results[x[i]] = round(model.solution.get_values(x[i]), 3)
+    for i in model.i:
+        for j in model.j:
+            results[f"{x[i]}_{j}"] = round(value(getattr(model, f"{x[i]}_{j}")), 4)
 
-    return results
+    for j in model.j:
+        results[f"combination_{j}"] = round(value(getattr(model, f"combination_{j}")), 4)
+
+        if obj_type == "diff_min_max":
+            results[f"max_resistance_{j}"] = round(value(getattr(model, f"max_resistance_{j}")), 4)
+            results[f"min_resistance_{j}"] = round(value(getattr(model, f"min_resistance_{j}")), 4)
+        elif obj_type.startswith("farthest"):
+            results[f"farthest_{j}"] = round(value(getattr(model, f"farthest_{j}")), 4)
+
+    if obj_type == "diff_min_max":
+        results["max_resistance"] = round(value(model.max_resistance), 4)
+        results["min_resistance"] = round(value(model.min_resistance), 4)
+    elif obj_type.startswith("farthest"):
+        results["farthest"] = round(value(model.farthest), 4)
+
+    model.write(filename="resistance_calculator.lp",
+                io_options={"symbolic_solver_labels": True})
+
+    new_dict = {}
+
+    # all combinations
+    all_combination_nums = [int(i.split("_")[-1]) for i in results if i.startswith("combination_")]
+
+    for i in all_combination_nums:
+        # find variables for the combination
+        variables = [j for j in results if j.endswith(f"_{i}") and j.startswith("P")]
+        variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("RL")])
+        variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("RC")])
+        variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("R") and j not in variables])
+
+        if obj_type == "diff_min_max":
+            variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("max_resistance")])
+            variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("min_resistance")])
+        elif obj_type.startswith("farthest"):
+            variables.extend([j for j in results if j.endswith(f"_{i}") and j.startswith("farthest")])
+
+        new_dict[i] = variables
+
+    selected_combination = [i for i in all_combination_nums if results[f"combination_{i}"] == 1][0]
+    final_results = {}
+    for var in new_dict[selected_combination]:
+        if var.startswith("R") or var.startswith("P"):
+            final_results[(var.split("_")[0], selected_combination)] = results[var]
+
+    return final_results
 
 
 def make_dict_reverse(dictionary):
@@ -367,31 +510,33 @@ def make_dict_reverse(dictionary):
 
 
 def match_resistance_dict_and_label_dict(resistance_dict, label_dict):
+
     new_dict = {}
     for key in resistance_dict.keys():
-        labels: list[str] = resistance_dict[key]
-        new_dict[key] = []
+        labels: list[tuple[str, int]] = resistance_dict[key]
+        selected_comb_num = labels[0][1]
+        new_dict[key, selected_comb_num] = []
         for label in labels:
-            cells = label_dict[label]
+            cells = label_dict[label[0]]
             for cell in cells:
-                new_dict[key].append((cell[0], cell[1]))
+                new_dict[key, selected_comb_num].append((cell[0], cell[1]))
 
     updated_dict = {}
     for key in new_dict.keys():
         for cell in new_dict[key]:
             # if cell type is straight horizontal or vertical check key if (key, L) or (key, C) is in the dictionary
             if cell[1] == TileType.STRAIGHT_HORIZONTAL or cell[1] == TileType.STRAIGHT_VERTICAL:
-                if (key, 'STRAIGHT') in updated_dict:  # add position of the cell to the list
-                    updated_dict[(key, 'STRAIGHT')].append((cell[0], cell[1]))
+                if (key[0], key[1], 'STRAIGHT') in updated_dict:  # add position of the cell to the list
+                    updated_dict[(key[0], key[1], 'STRAIGHT')].append((cell[0], cell[1]))
                 else:
-                    updated_dict[(key, 'STRAIGHT')] = [(cell[0], cell[1])]
+                    updated_dict[(key[0], key[1], 'STRAIGHT')] = [(cell[0], cell[1])]
 
             elif cell[1] == TileType.TURN_WEST_SOUTH or cell[1] == TileType.TURN_WEST_NORTH or \
                     cell[1] == TileType.TURN_EAST_SOUTH or cell[1] == TileType.TURN_EAST_NORTH:
-                if (key, 'CORNER') in updated_dict:  # add position of the cell to the list
-                    updated_dict[(key, 'CORNER')].append((cell[0], cell[1]))
+                if (key[0], key[1], 'CORNER') in updated_dict:  # add position of the cell to the list
+                    updated_dict[(key[0], key[1], 'CORNER')].append((cell[0], cell[1]))
                 else:
-                    updated_dict[(key, 'CORNER')] = [(cell[0], cell[1])]
+                    updated_dict[(key[0], key[1], 'CORNER')] = [(cell[0], cell[1])]
 
             else:
                 raise ValueError("Invalid Tile Type")
@@ -399,16 +544,16 @@ def match_resistance_dict_and_label_dict(resistance_dict, label_dict):
     return updated_dict
 
 
-def calculate_resistance(circuit):
+def calculate_resistance(circuit, resistance_bounds: dict):
     circuit_results = {}
     for single_circuit in circuit:
-        mf_circuit_results_cplex_with_obj = calculate_resistance_with_cplex(circuit=single_circuit,
-                                                                            add_objective=True)
-        circuit_results.update(mf_circuit_results_cplex_with_obj)
+        mf_circuit_results_opt_with_obj = calculate_resistance_via_optimization(
+            circuit=single_circuit, resistance_bounds=resistance_bounds)
+        circuit_results.update(mf_circuit_results_opt_with_obj)
 
     results_dict = {}
     for key in circuit_results.keys():
-        if key.startswith('RL') or key.startswith('RC'):
+        if key[0].startswith('RL') or key[0].startswith('RC'):
             if circuit_results[key] != 0:
                 results_dict[key] = circuit_results[key]
 
@@ -417,7 +562,7 @@ def calculate_resistance(circuit):
     return reverse_dict
 
 
-def R_calculator(nested_list):
+def R_calculator(nested_list, resistance_bounds: dict):
     print("Circuit:")
     print(f"[\n{format_lines(nested_list)}]")
 
@@ -438,7 +583,7 @@ def R_calculator(nested_list):
     print("\nNew Circuit:")
     print(format_lines_2(NEW_CIRCUIT))
 
-    RESISTANCES = calculate_resistance(NEW_CIRCUIT)
+    RESISTANCES = calculate_resistance(NEW_CIRCUIT, resistance_bounds)
     LABEL_DICT_REVERSED = make_dict_reverse(LABEL_DICT)
 
     RESULTS = match_resistance_dict_and_label_dict(RESISTANCES, LABEL_DICT_REVERSED)
