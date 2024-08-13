@@ -370,8 +370,9 @@ def calculate_resistance_via_optimization(circuit,
     for j in model.j:
         for i in range(len(A)):
             model.add_component(f"A_constraint_{i}_{j}",
-                                Constraint(expr=sum(A[i][k] * getattr(model, f"{x[k]}_{j}") for k in model.i)
-                                                == b[i] * getattr(model, f"combination_{j}")))
+                                Constraint(expr=sum(A[i][k] * getattr(
+                                    model, f"{x[k]}_{j}") for k in model.i) == b[i] * getattr(
+                                    model, f"combination_{j}")))
 
     # Set max_resistance and min_resistance
     for j in model.j:
@@ -468,9 +469,6 @@ def calculate_resistance_via_optimization(circuit,
     elif obj_type.startswith("farthest"):
         results["farthest"] = round(value(model.farthest), 4)
 
-    model.write(filename="resistance_calculator.lp",
-                io_options={"symbolic_solver_labels": True})
-
     new_dict = {}
 
     # all combinations
@@ -502,7 +500,7 @@ def calculate_resistance_via_optimization(circuit,
 
 def make_dict_reverse(dictionary):
     unique_values = set(dictionary.values())
-    new_dict = {value: [] for value in unique_values}
+    new_dict = {value_new: [] for value_new in unique_values}
     for key in dictionary.keys():
         new_dict[dictionary[key]].append(key)
 
