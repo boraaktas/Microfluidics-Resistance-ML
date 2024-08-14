@@ -4,14 +4,14 @@ import re
 import cplex
 import numpy as np
 
-from .tile_type import TileType
+from . import Constants
 
 
 def add_labels(flow_rate_circuit, label, new_circuit):
     last_label_num = int(label.split('-')[-1])
     for i in range(len(flow_rate_circuit)):
         if isinstance(flow_rate_circuit[i][0], tuple):
-            new_circuit.append((label, flow_rate_circuit[i][0], flow_rate_circuit[i][2]))
+            new_circuit.append((label, flow_rate_circuit[i][0], flow_rate_circuit[i][1].flow_rate_in_this_cell))
         elif isinstance(flow_rate_circuit[i], list):
             add_labels(flow_rate_circuit[i], label + str('-') + str(last_label_num), new_circuit)
             last_label_num += 1
@@ -30,9 +30,9 @@ def delete_other_elements(circuit):
     for i in range(len(circuit)):
 
         if isinstance(circuit[i][0], tuple):
-            if circuit[i][1] == TileType.FLOW_RATE_CALCULATOR_HORIZONTAL or \
-                    circuit[i][1] == TileType.FLOW_RATE_CALCULATOR_VERTICAL or \
-                    circuit[i][1] == TileType.FLOW_RATE_CALCULATOR:
+            if (circuit[i][1].tile_type in Constants.Q_TILES
+                    or circuit[i][1].tile_type in Constants.END_TYPES
+                    or (circuit[i][1].tile_type in Constants.DIVISION_TYPES and i != 0)):
                 new_circuit.append(circuit[i])
         elif isinstance(circuit[i], list):
             new_circuit.append(delete_other_elements(circuit[i]))

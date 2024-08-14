@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .tile_type import TileType
 
 
@@ -5,6 +7,44 @@ class Tile:
 
     def __init__(self, tile_type: TileType = TileType.EMPTY):
         self.tile_type = tile_type
+
+        # None means the resistance in this cell has not been calculated yet, or it is an empty tile
+        self.resistance_in_this_cell: Optional[float] = None
+
+        # None means the flow rate in this cell has not been calculated yet
+        self.flow_rate_in_this_cell: Optional[float] = None
+
+        # None means the pressure in this cell has not been calculated yet, or it is not needed
+        self.pressure_in_this_cell: Optional[float] = None
+
+        # None means the optimization model has not selected a combination for this tile, or it is an empty tile
+        self.selected_comb_for_tile: Optional[int] = None
+
+        # None means the optimization model has not selected a direction for this tile, or it is an empty tile
+        # it will be set when all the operations are done
+        self.coming_direction: Optional[str] = None
+
+        # None means the optimization model has not selected a direction for this tile, or it is an empty tile
+        # it will be set when all the operations are done
+        self.going_directions: Optional[list[str]] = None
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return (f"{self.tile_type},".ljust(45) +
+                f" R: {self.resistance_in_this_cell},".ljust(15) +
+                f" I: {self.flow_rate_in_this_cell},".ljust(15) +
+                f" P: {self.pressure_in_this_cell},".ljust(15) +
+                f" Comb: {self.selected_comb_for_tile},".ljust(15) +
+                f" CD: {self.coming_direction},".ljust(15) +
+                f" GD: {self.going_directions}")
+
+    def make_all_none(self):
+        self.resistance_in_this_cell = None
+        self.flow_rate_in_this_cell = None
+        self.pressure_in_this_cell = None
+        self.selected_comb_for_tile = None
 
     def set_tile_type(self, tile_type: TileType):
         print(f"{self.tile_type} -> {tile_type}")

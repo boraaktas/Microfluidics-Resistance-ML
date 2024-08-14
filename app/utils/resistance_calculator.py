@@ -37,7 +37,7 @@ def label_nested_list(circuit, label_dict, i):
     for j in range(len(flat_list)):
         print(flat_list[j])
         cur_tile = flat_list[j]
-        cur_tile_type_letter = get_tile_type_letter(flat_list[j][1])
+        cur_tile_type_letter = get_tile_type_letter(flat_list[j][1].tile_type)
 
         if j == 0:
             label_dict[cur_tile] = cur_tile_type_letter + str(i)
@@ -86,10 +86,10 @@ def rewrite_circuit_with_labels(circuit, label_dict):
                 other_elements_with_labels.append(label_dict[tuple(other_element)])
 
             entry_point_num = int(other_elements_with_labels[0][1:])
-            entry_point_pressure = other_elements[0][2]
+            entry_point_pressure = other_elements[0][1].pressure_in_this_cell
 
             exit_point_num = int(other_elements_with_labels[-1][1:])
-            exit_point_pressure = other_elements[-1][2]
+            exit_point_pressure = other_elements[-1][1].pressure_in_this_cell
 
             rl_count = 0
             rc_count = 0
@@ -102,8 +102,10 @@ def rewrite_circuit_with_labels(circuit, label_dict):
                     rl_count += 1
                 elif element[:2] == 'RC':
                     rc_count += 1
-                if element[:1] == 'Q' and other_elements[k][2] is not None:
-                    q_values = other_elements[k][2]
+
+                if ((element[:1] == 'Q' or element[:1] == 'P')
+                        and other_elements[k][1].flow_rate_in_this_cell is not None):
+                    q_values = other_elements[k][1].flow_rate_in_this_cell
 
             shrinked_elements = (('P' + str(entry_point_num), entry_point_pressure),
                                  ('RL' + str(exit_point_num), rl_count, None),
@@ -128,7 +130,7 @@ def format_lines(lines, indent=0):
 
     for line in lines:
         if isinstance(line[0], tuple):
-            formatted_lines += f"{indent_str}[{line[0]}, TileType.{line[1].name}, {line[2]}],\n"
+            formatted_lines += f"{indent_str}[{line[0]}, {line[1]}],\n"
         else:
             formatted_lines += f"{indent_str}[\n{format_lines(line, indent + 1)}{indent_str}],\n"
 
@@ -517,20 +519,22 @@ def match_resistance_dict_and_label_dict(resistance_dict, label_dict):
         for label in labels:
             cells = label_dict[label[0]]
             for cell in cells:
+                cell[1].selected_comb_for_tile = selected_comb_num
                 new_dict[key, selected_comb_num].append((cell[0], cell[1]))
 
     updated_dict = {}
     for key in new_dict.keys():
         for cell in new_dict[key]:
             # if cell type is straight horizontal or vertical check key if (key, L) or (key, C) is in the dictionary
-            if cell[1] == TileType.STRAIGHT_HORIZONTAL or cell[1] == TileType.STRAIGHT_VERTICAL:
+            if (cell[1].tile_type == TileType.STRAIGHT_HORIZONTAL
+                    or cell[1].tile_type == TileType.STRAIGHT_VERTICAL):
                 if (key[0], key[1], 'STRAIGHT') in updated_dict:  # add position of the cell to the list
                     updated_dict[(key[0], key[1], 'STRAIGHT')].append((cell[0], cell[1]))
                 else:
                     updated_dict[(key[0], key[1], 'STRAIGHT')] = [(cell[0], cell[1])]
 
-            elif cell[1] == TileType.TURN_WEST_SOUTH or cell[1] == TileType.TURN_WEST_NORTH or \
-                    cell[1] == TileType.TURN_EAST_SOUTH or cell[1] == TileType.TURN_EAST_NORTH:
+            elif cell[1].tile_type == TileType.TURN_WEST_SOUTH or cell[1].tile_type == TileType.TURN_WEST_NORTH or \
+                    cell[1].tile_type == TileType.TURN_EAST_SOUTH or cell[1].tile_type == TileType.TURN_EAST_NORTH:
                 if (key[0], key[1], 'CORNER') in updated_dict:  # add position of the cell to the list
                     updated_dict[(key[0], key[1], 'CORNER')].append((cell[0], cell[1]))
                 else:

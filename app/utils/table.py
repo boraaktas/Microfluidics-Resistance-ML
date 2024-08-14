@@ -1,5 +1,3 @@
-import copy
-
 from .constants import Constants
 from .tile import Tile
 from .tile_type import TileType
@@ -41,6 +39,11 @@ class Table:
         for i in range(self.table_x):
             for j in range(self.table_y):
                 self.set_tile(i, j, Tile(TileType(data[i][j])))
+
+    def make_all_tiles_attributes_none(self):
+        for i in range(self.table_x):
+            for j in range(self.table_y):
+                self.table[i][j].make_all_none()
 
     def set_tile(self, x: int, y: int, tile: Tile):
 
@@ -125,6 +128,8 @@ class Table:
         table_x = self.table_x
         table_y = self.table_y
 
+        self.make_all_tiles_attributes_none()
+
         table = self.table.copy()
         # print the table
         for i in range(table_x):
@@ -169,7 +174,7 @@ class Table:
         print("[")
         for line in lines:
             if isinstance(line[0], tuple):
-                formatted_lines += f"{indent_str}[{line[0]}, TileType.{line[1].name}, {line[2]}],\n"
+                formatted_lines += f"{indent_str}[{line[0]}, {line[1]}],\n"
             else:
                 formatted_lines += f"{indent_str}[\n{self.format_lines(line, indent + 1)}{indent_str}],\n"
         print("]")
@@ -185,24 +190,24 @@ class Table:
                   ) -> list[tuple[tuple[int, int], TileType]]:
 
         current_tile = self.table[cur_x][cur_y]
-        cur_line.append([(cur_x, cur_y), current_tile.tile_type, None])
+        current_tile.coming_direction = coming_direction
+        cur_line.append([(cur_x, cur_y), current_tile])
         visited_tiles.append((cur_x, cur_y))
 
         try:
             current_tile_going_directions = current_tile.find_going_direction(coming_direction)
+            current_tile.going_directions = current_tile_going_directions
         except Exception as e:
             raise Exception(e)
 
         if current_tile.tile_type in Constants.DIVISION_TYPES:
             del cur_line[-1]
-            cur_line.append([(cur_x, cur_y), TileType.FLOW_RATE_CALCULATOR, None])
-            cur_line.append([(cur_x, cur_y), current_tile.tile_type, None])
+            cur_line.append([(cur_x, cur_y), current_tile])
 
         if current_tile_going_directions == ["end"]:
             # delete the last element of the line
             del cur_line[-1]
-            cur_line.append([(cur_x, cur_y), TileType.FLOW_RATE_CALCULATOR, None])
-            cur_line.append([(cur_x, cur_y), current_tile.tile_type, None])
+            cur_line.append([(cur_x, cur_y), current_tile])
             return cur_line
 
         elif current_tile_going_directions == ["empty"]:
@@ -224,64 +229,87 @@ class Table:
 
             if len(branches) > 1:
                 for branch in branches:
-                    cur_line.append([[(cur_x, cur_y), current_tile.tile_type, None]] + branch)
+                    cur_line.append([[(cur_x, cur_y), current_tile]] + branch)
             else:
                 cur_line.extend(branches[0])
 
         return cur_line
 
-    def update_transformed_table_helper(self, transformed_table, x, y, value, mode):
-
-        if mode == 1:
-            if isinstance(transformed_table[0], tuple):
-                if transformed_table[0] == (x, y):
-                    if transformed_table[1] != TileType.FLOW_RATE_CALCULATOR:
-                        transformed_table[2] = value
-                return
-
+    def flat_nested_list(self, nested_list):
+        flat_list = []
+        for item in nested_list:
+            if not isinstance(item[0], tuple):
+                flat_list.extend(self.flat_nested_list(item))
             else:
-                for i in range(len(transformed_table)):
-                    self.update_transformed_table_helper(transformed_table[i], x, y, value, mode)
+                flat_list.append(item)
+        return flat_list
 
-            return transformed_table
+    def make_nested_list_to_list_of_lists(self, nested_list):
 
-        elif mode == 2:
-            if isinstance(transformed_table[0], tuple):
-                if transformed_table[0] == (x, y) and (transformed_table[1] == TileType.FLOW_RATE_CALCULATOR or
-                                                       transformed_table[
-                                                           1] == TileType.FLOW_RATE_CALCULATOR_HORIZONTAL or
-                                                       transformed_table[1] == TileType.FLOW_RATE_CALCULATOR_VERTICAL):
-                    transformed_table[2] = value
-                return
+        flat_list = self.flat_nested_list(nested_list)
 
-            else:
-                for i in range(len(transformed_table)):
-                    self.update_transformed_table_helper(transformed_table[i], x, y, value, mode)
+        l_of_l = [[]]
+        for item in flat_list:
+            item_obj = item[1]
+            if item_obj.tile_type in Constants.STARTER_TYPES:
+                l_of_l[-1].append(item)
+            elif item_obj.tile_type in Constants.END_TYPES:  # add a new empty list
+                l_of_l[-1].append(item)
+                l_of_l.append([])
+            elif item_obj.tile_type not in Constants.P_TILES:
+                l_of_l[-1].append(item)
+            elif item_obj.tile_type in Constants.DIVISION_TYPES and len(l_of_l[-1]) != 0:
+                l_of_l[-1].append(item)
+                l_of_l.append([])
+            elif item_obj.tile_type in Constants.DIVISION_TYPES and len(l_of_l[-1]) == 0:
+                l_of_l[-1].append(item)
 
-            return transformed_table
+        # remove last empty list
+        l_of_l = l_of_l[:-1]
 
-        else:
-            raise Exception("Mode is not allowed")
+        return l_of_l
 
-    def update_transformed_table(self, transformed_table, entries, mode):
-        # entries is a dictionary with keys as the location such as (x, y) and values as the values for that element
-        # put this values to the transformed table instead of None's
-        # be careful transformed table is a nested list
-        # do it witt recursion
+    def set_selected_comb_to_all_components(self, transformed_table):
 
-        updated_transformed_table = copy.deepcopy(transformed_table)
+        for circuit in transformed_table:
 
-        for entry in entries:
-            x, y = entry
-            value = entries[entry]
-            updated_transformed_table = self.update_transformed_table_helper(updated_transformed_table,
-                                                                             x, y, value, mode)
+            flattened_circuit = self.flat_nested_list(circuit)
 
-        print("Updated Transformed Table:")
-        print(f"\n{self.format_lines(updated_transformed_table)}")
-        print("------------------------------------------------")
+            selected_comb = None
+            for i in range(len(flattened_circuit)):
+                # if the tile has selected_comb_for_tile attribute
+                if flattened_circuit[i][1].selected_comb_for_tile is not None:
+                    selected_comb = flattened_circuit[i][1].selected_comb_for_tile
+                    break
 
-        return updated_transformed_table
+            # put all the selected_comb_for_tile to all the components
+            for i in range(len(flattened_circuit)):
+                coords_tile = flattened_circuit[i][0]
+                self.table[coords_tile[0]][coords_tile[1]].selected_comb_for_tile = selected_comb
+
+    def set_flow_rates_for_other_components(self, transformed_table):
+
+        list_of_lists = self.make_nested_list_to_list_of_lists(transformed_table)
+
+        for l_l in list_of_lists:
+
+            found_flow_rate = None
+            for i in range(len(l_l)):
+                # pass the first element
+                if i == 0:
+                    continue
+                if l_l[i][1].flow_rate_in_this_cell is not None:
+                    found_flow_rate = l_l[i][1].flow_rate_in_this_cell
+                    break
+
+            # set the flow rate for all the components
+            # if the first element of the list is a divider, then do not set the flow rate
+            for i in range(len(l_l)):
+                if i == 0 and l_l[i][1].tile_type in Constants.DIVISION_TYPES:
+                    continue
+                coords_tile = l_l[i][0]
+                self.table[coords_tile[0]][coords_tile[1]].flow_rate_in_this_cell = found_flow_rate
+
 
     @staticmethod
     def get_next_tile_coordinates(cur_x: int, cur_y: int, direction: str) -> tuple[int, int]:

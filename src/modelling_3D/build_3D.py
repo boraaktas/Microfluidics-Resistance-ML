@@ -3,6 +3,7 @@ from typing import Optional
 import numpy as np
 import trimesh
 from trimesh.creation import box, cylinder
+
 from src.maze_functions import get_coord_list_plot
 
 

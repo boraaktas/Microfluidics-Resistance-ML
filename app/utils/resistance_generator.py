@@ -46,7 +46,7 @@ class ResistanceGenerator:
                                            height=height,
                                            fillet_radius=fillet_radius,
                                            target_loc_mode=target_loc_mode,
-                                           method="TS",
+                                           method=None,
                                            side_length=side_length)
 
         cell_resistance = generative_model.generate_maze()

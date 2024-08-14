@@ -24,5 +24,3 @@ class TileType(Enum):
     DIVISION_2_FROM_NORTH = 19
     DIVISION_2_FROM_SOUTH = 20
     DIVISION_3 = 21
-
-    FLOW_RATE_CALCULATOR = -1

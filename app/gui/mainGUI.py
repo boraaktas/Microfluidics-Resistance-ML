@@ -9,7 +9,7 @@ from PIL import ImageTk, Image
 from matplotlib import pyplot as plt
 
 from app.utils import (load_images, load_res_bounds, load_prediction_model,
-                       Table, Tile, R_calculator, Q_calculator, ResistanceGenerator)
+                       R_calculator, Q_calculator, ResistanceGenerator, Constants, Table, Tile, TileType)
 from src.maze_functions import plot_other_components
 from src.modelling_3D.build_3D import build_3d_maze, import_stl
 from .menuGUI import Menu_Section
@@ -151,7 +151,7 @@ class Main_Section:
             row += 1
 
         for flow_rate_calculator in flow_rate_calculators:
-            label = ttk.Label(scrollable_frame, text=f"Flow Rate Calculator ({flow_rate_calculator[0][0] + 1},"
+            label = ttk.Label(scrollable_frame, text=f"Desired Flow Rate ({flow_rate_calculator[0][0] + 1},"
                                                      f" {flow_rate_calculator[0][1] + 1}):", anchor="center")
             label.grid(row=row, column=0, padx=10, pady=5)
             entry = ttk.Entry(scrollable_frame, width=5)
@@ -171,25 +171,48 @@ class Main_Section:
             value = entry.get()
             try:
                 value = float(value)
+                if value <= 0:
+                    self.table_obj.make_all_tiles_attributes_none()
+                    raise ValueError("All fields must be filled with positive numbers.")
             except ValueError:
+                self.table_obj.make_all_tiles_attributes_none()
                 self.show_error_popup("All fields must be filled with numbers.")
-            inputs[position] = value
+
+            type_in_position = self.table_obj.table[position[0]][position[1]].tile_type
+            if type_in_position in Constants.STARTER_TYPES:
+                inputs[position] = {"P": value, "I": None}
+            elif type_in_position in Constants.Q_TILES:
+                inputs[position] = {"P": None, "I": value}
+            else:
+                self.table_obj.make_all_tiles_attributes_none()
+                raise ValueError("Invalid tile type.")
 
         exit_pressures = self.table_obj.find_exit_pressures()
         for i in range(len(exit_pressures)):
-            inputs[exit_pressures[i][0]] = 0
+            inputs[exit_pressures[i][0]] = {"P": 0, "I": None}
 
         print(inputs)
 
-        self.transformed_table = self.table_obj.update_transformed_table(self.transformed_table,
-                                                                         inputs, mode=1)
+        # go all tiles in inputs and update the transformed table
+        for key in inputs.keys():
+            tile_obj = self.table_obj.table[key[0]][key[1]]
+            if inputs[key]["P"] is not None:
+                tile_obj.pressure_in_this_cell = inputs[key]["P"]
+            if inputs[key]["I"] is not None:
+                tile_obj.flow_rate_in_this_cell = inputs[key]["I"]
+
         success_flow_rates = False
         try:
             flow_rate_dict = Q_calculator(self.transformed_table)
-            self.transformed_table = self.table_obj.update_transformed_table(self.transformed_table,
-                                                                             flow_rate_dict, mode=2)
+            for key in flow_rate_dict.keys():
+                tile_obj = self.table_obj.table[key[0]][key[1]]
+                tile_obj.flow_rate_in_this_cell = flow_rate_dict[key]
+
+            self.table_obj.set_flow_rates_for_other_components(self.transformed_table)
+
             success_flow_rates = True
         except Exception as e:
+            self.table_obj.make_all_tiles_attributes_none()
             print("Error: ", e)
             # print the stack trace
             traceback.print_exc()
@@ -201,9 +224,14 @@ class Main_Section:
                 self.resistance_dict = R_calculator(self.transformed_table, self.res_bounds)
                 for key in self.resistance_dict.keys():
                     print(f"{key}: {self.resistance_dict[key]}")
+
+                # it will update transformed_table with the selected combinations
+                self.table_obj.set_selected_comb_to_all_components(self.transformed_table)
+
                 success_resistances = True
                 print("\n\n\n")
             except Exception as e:
+                self.table_obj.make_all_tiles_attributes_none()
                 print("Error: ", e)
                 # print the stack trace
                 traceback.print_exc()
@@ -249,7 +277,8 @@ class Main_Section:
 
         RG = ResistanceGenerator(self.prediction_model)
 
-        ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, Tile]] = {}
+        ALL_GENERATED_COMPONENTS\
+            : dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, TileType, str]] = {}
 
         entry_pressures = self.table_obj.find_entry_pressures()
         flow_rate_calculators = self.table_obj.find_flow_rate_calculators()
@@ -265,9 +294,20 @@ class Main_Section:
             cur_component_image = plot_other_components(str(cur_component_type).split(".")[1],
                                                         show_plot=False, shape=(20, 20))
 
-            # TODO: Find the way that putting values of width, height, fillet_radius
-            ALL_GENERATED_COMPONENTS[cur_component_loc] = (np.empty((21, 21)), cur_component_image,
-                                                           -1, -1, -1, cur_component_type)
+            cur_component_width = self.res_bounds[component[1].selected_comb_for_tile]['Width']
+            cur_component_height = self.res_bounds[component[1].selected_comb_for_tile]['Height']
+            cur_component_fillet_radius = self.res_bounds[component[1].selected_comb_for_tile]['Fillet_Radius']
+
+            cur_component_coming_direction = component[1].coming_direction
+
+            ALL_GENERATED_COMPONENTS[cur_component_loc] = (np.empty((21, 21)),
+                                                           cur_component_image,
+                                                           cur_component_width,
+                                                           cur_component_height,
+                                                           cur_component_fillet_radius,
+                                                           cur_component_type,
+                                                           cur_component_coming_direction
+                                                           )
 
         for key in self.resistance_dict.keys():
             cell_res_value: float = key[0]
@@ -289,13 +329,19 @@ class Main_Section:
             all_cell_locs_and_types = self.resistance_dict[key]
             for cell_loc_type in all_cell_locs_and_types:
                 cur_cell_loc = cell_loc_type[0]
-                cur_cell_type = cell_loc_type[1]
+                cur_cell_type = cell_loc_type[1].tile_type
+                cur_cell_coming_direction = cell_loc_type[1].coming_direction
 
                 cur_cell_res_matrix, cur_cell_fig = RG.get_rotated_matrix_and_figure(cell_resistance_matrix,
                                                                                      cur_cell_type)
 
-                ALL_GENERATED_COMPONENTS[cur_cell_loc] = (cur_cell_res_matrix, cur_cell_fig, pipe_width, pipe_height,
-                                                          pipe_fillet_radius, cur_cell_type)
+                ALL_GENERATED_COMPONENTS[cur_cell_loc] = (cur_cell_res_matrix,
+                                                          cur_cell_fig,
+                                                          pipe_width,
+                                                          pipe_height,
+                                                          pipe_fillet_radius,
+                                                          cur_cell_type,
+                                                          cur_cell_coming_direction)
 
                 generated_cell_count.set(generated_cell_count.get() + 1)
                 popup.update()
@@ -390,7 +436,9 @@ class Main_Section:
                 img_label.grid(row=i, column=j, padx=0, pady=0)
 
         for cell_loc in updated_dict.keys():
-            cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type = updated_dict[cell_loc]
+            (cell_res_matrix, cell_fig,
+             pipe_width, pipe_height, pipe_fillet_radius,
+             cell_type, cell_coming_dir) = updated_dict[cell_loc]
             row, col = cell_loc  # Assuming cell_loc is a tuple (x, y)
 
             resized_image = self.resize_figure(cell_fig, image_size)
@@ -402,7 +450,6 @@ class Main_Section:
 
         dict_for_3d_model = {}
         max_x = max([cell_loc[0] for cell_loc in updated_dict.keys()])
-        max_y = max([cell_loc[1] for cell_loc in updated_dict.keys()])
         for key in updated_dict.keys():
             new_key = (key[1], max_x - key[0])
             dict_for_3d_model[new_key] = updated_dict[key]
@@ -418,7 +465,7 @@ class Main_Section:
             print(key, DICT_FOR_3D_MODEL[key][0].shape, DICT_FOR_3D_MODEL[key][1],
                   DICT_FOR_3D_MODEL[key][2],
                   DICT_FOR_3D_MODEL[key][3], DICT_FOR_3D_MODEL[key][4],
-                  DICT_FOR_3D_MODEL[key][5])
+                  DICT_FOR_3D_MODEL[key][5], DICT_FOR_3D_MODEL[key][6])
 
         popup = tk.Toplevel()
         popup.title("Download Options")
@@ -458,7 +505,9 @@ class Main_Section:
         for i in range(max_x + 1):
             for j in range(max_y + 1):
                 if (i, j) in DICT_FOR_3D_MODEL.keys():
-                    cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type = DICT_FOR_3D_MODEL[(i, j)]
+                    (cell_res_matrix, cell_fig,
+                     pipe_width, pipe_height, pipe_fillet_radius,
+                     cell_type, cell_coming_dir) = DICT_FOR_3D_MODEL[(i, j)]
                     cell_type_str = str(cell_type).split(".")[1]
 
                     if pipe_width != -1 and pipe_height != -1 and pipe_fillet_radius != -1:
@@ -544,19 +593,3 @@ class Main_Section:
         combined_model = trimesh.util.concatenate([combined_model, walls])
 
         combined_model.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
