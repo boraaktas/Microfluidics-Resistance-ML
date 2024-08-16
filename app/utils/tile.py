@@ -28,17 +28,25 @@ class Tile:
         # it will be set when all the operations are done
         self.going_directions: Optional[list[str]] = None
 
+        # None means the resistance in this cell has not been generated yet
+        self.generated_resistance_in_this_cell: Optional[float] = None
+
+        # None means the flow rate in this cell has not been generated yet
+        self.generated_flow_rate_in_this_cell: Optional[float] = None
+
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         return (f"{self.tile_type},".ljust(45) +
                 f" R: {self.resistance_in_this_cell},".ljust(15) +
-                f" I: {self.flow_rate_in_this_cell},".ljust(15) +
+                f" Q: {self.flow_rate_in_this_cell},".ljust(15) +
                 f" P: {self.pressure_in_this_cell},".ljust(15) +
                 f" Comb: {self.selected_comb_for_tile},".ljust(15) +
+                f" GR: {self.generated_resistance_in_this_cell},".ljust(15) +
+                f" GQ: {self.generated_flow_rate_in_this_cell},".ljust(15) +
                 f" CD: {self.coming_direction},".ljust(15) +
-                f" GD: {self.going_directions}")
+                f" GD: {self.going_directions}".ljust(15))
 
     def make_all_none(self):
         self.resistance_in_this_cell = None
