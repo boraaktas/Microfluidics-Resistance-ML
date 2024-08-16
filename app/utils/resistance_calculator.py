@@ -280,12 +280,41 @@ def create_matrix(circuit):
     return A, b, x, RLS_and_RCS_COUNT
 
 
+def flatten_circuit(circuit):
+    new_circuit = []
+    for i in range(len(circuit)):
+        if isinstance(circuit[i], tuple):
+            new_circuit.append(circuit[i])
+        elif isinstance(circuit[i], list):
+            new_circuit.extend(flatten_circuit(circuit[i]))
+        else:
+            raise ValueError("Invalid Circuit")
+    return new_circuit
+
+
 def calculate_resistance_via_optimization(circuit,
                                           resistance_bounds,
                                           obj_type="farthest_to_lb",
                                           start_num=None,
                                           end_num=None):
     A, b, x, RLS_and_RCS_COUNT = create_matrix(circuit)
+
+    flatten_cir = flatten_circuit(circuit)
+
+    R_div_counts = {}
+    for var in x:
+        if var[0] == 'R' and var not in RLS_and_RCS_COUNT:
+            var_num = int(var[1:])
+            count = 0
+            for line in flatten_cir:
+                if var_num == int(line[-1][0][1:]):
+                    if line[-1][1] is None:
+                        count += 1
+                    if line[0][1] is None:
+                        count += 1
+            R_div_counts[var] = count
+
+    R_indices = [x.index(var) for var in R_div_counts]
 
     if obj_type not in ["diff_min_max", "farthest_to_avg", "farthest_to_lb", "farthest_to_ub"]:
         raise ValueError("obj_type should be one of the following: diff_min_max, farthest_to_avg, "
@@ -371,9 +400,19 @@ def calculate_resistance_via_optimization(circuit,
     # Add A matrix constraints for each combination
     for j in model.j:
         for i in range(len(A)):
+
+            A_row = A[i]
+            right_hand_side = b[i]
+            found = False
+            for r_index in R_indices:
+                if not found:
+                    if A_row[r_index] != 0 and A_row[r_index] != 1:
+                        right_hand_side = -1 * resistance_bounds[j]['div_res'] * A_row[r_index]
+                        found = True
+
             model.add_component(f"A_constraint_{i}_{j}",
-                                Constraint(expr=sum(A[i][k] * getattr(
-                                    model, f"{x[k]}_{j}") for k in model.i) == b[i] * getattr(
+                                Constraint(expr=sum(A_row[k] * getattr(
+                                    model, f"{x[k]}_{j}") for k in model.i) == right_hand_side * getattr(
                                     model, f"combination_{j}")))
 
     # Set max_resistance and min_resistance
@@ -550,7 +589,7 @@ def calculate_resistance(circuit, resistance_bounds: dict):
     circuit_results = {}
     for single_circuit in circuit:
         mf_circuit_results_opt_with_obj = calculate_resistance_via_optimization(
-            circuit=single_circuit, resistance_bounds=resistance_bounds)
+            circuit=single_circuit, resistance_bounds=resistance_bounds, start_num=0, end_num=1)
         circuit_results.update(mf_circuit_results_opt_with_obj)
 
     results_dict = {}

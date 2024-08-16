@@ -234,6 +234,20 @@ class Main_Section:
                         coords = value[0]
                         self.table_obj.table[coords[0]][coords[1]].resistance_in_this_cell = key_resistance
 
+                # put resistance values to divisons
+                divisions = self.table_obj.find_divisions()
+                for division in divisions:
+                    division_tile_loc = division[0]
+                    selected_comb_for_div = (
+                        self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].selected_comb_for_tile)
+
+                    div_res_for_comb = self.res_bounds[selected_comb_for_div]['div_res']
+
+                    self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].resistance_in_this_cell \
+                        = div_res_for_comb
+                    self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].generated_resistance_in_this_cell \
+                        = div_res_for_comb
+
                 success_resistances = True
                 print("\n\n\n")
             except Exception as e:
