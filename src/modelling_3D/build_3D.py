@@ -447,11 +447,5 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
 
     if show_model:
         combined_model.show(resolution=(1024, 768))
-        combined_model_with_base.show(resolution=(1024, 768))
 
     return combined_model, combined_model_with_base
-
-
-if __name__ == '__main__':
-    example_mesh = import_stl("DIVISION_2_FROM_EAST", None, 0.05, 0.05)
-    example_mesh.show()

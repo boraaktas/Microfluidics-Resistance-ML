@@ -4,13 +4,12 @@ import traceback
 
 import numpy as np
 import ttkbootstrap as ttk
-from PIL import ImageTk, Image
 from matplotlib import pyplot as plt
 
 from app.utils import (load_images, load_res_bounds, load_prediction_model,
                        R_calculator, Q_calculator, ResistanceGenerator, Constants, Table, Tile, TileType)
 from src.maze_functions import plot_other_components
-from src.modelling_3D import build_whole_circuit
+from .circuitPopUp import CircuitPopup
 from .menuGUI import Menu_Section
 from .tableGUI import Table_Section
 
@@ -285,8 +284,8 @@ class Main_Section:
 
         RG = ResistanceGenerator(self.prediction_model)
 
-        ALL_GENERATED_COMPONENTS \
-            : dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, TileType, str]] = {}
+        ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure,
+                                                              float, float, float, TileType, str]] = {}
 
         entry_pressures = self.table_obj.find_entry_pressures()
         flow_rate_calculators = self.table_obj.find_flow_rate_calculators()
@@ -363,199 +362,6 @@ class Main_Section:
         if popup is not None:
             popup.destroy()
 
-        self.open_circuit_popup(ALL_GENERATED_COMPONENTS)
-
-    @staticmethod
-    def resize_figure(fig, size):
-        """Resize a Matplotlib figure to a PIL image with the given size."""
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-        buf.seek(0)
-        img = Image.open(buf)
-        img = img.resize(size, Image.LANCZOS)
-        return img
-
-    def open_circuit_popup(self, ALL_GENERATED_COMPONENTS, image_size=(90, 90)):
-        most_upper_row = min([cell_loc[0] for cell_loc in ALL_GENERATED_COMPONENTS.keys()])
-        most_left_col = min([cell_loc[1] for cell_loc in ALL_GENERATED_COMPONENTS.keys()])
-
-        # Update the dict according to the most upper row, most lower row, most left col, most right col
-        updated_dict = {}
-        for cell_loc in ALL_GENERATED_COMPONENTS.keys():
-            row, col = cell_loc
-            updated_dict[(row - most_upper_row, col - most_left_col)] = ALL_GENERATED_COMPONENTS[cell_loc]
-
-        updated_most_lower_row = max([cell_loc[0] for cell_loc in updated_dict.keys()])
-        updated_most_right_col = max([cell_loc[1] for cell_loc in updated_dict.keys()])
-
-        dict_for_3d_model = {}
-        max_x = max([cell_loc[0] for cell_loc in updated_dict.keys()])
-        for key in updated_dict.keys():
-            new_key = (key[1], max_x - key[0])
-            dict_for_3d_model[new_key] = updated_dict[key]
-
-        popup = tk.Toplevel()
-        popup.title("Generated Circuit")
-        popup.resizable(False, False)
-
-        # Make mainGUI unresponsive
-        popup.grab_set()
-        popup.focus_set()
-        popup.transient(self.root)
-
-        # Open in the center of the screen and make it on top of the mainGUI
-        popup.update_idletasks()
-        popup_width = 1000  # Adjusted width for the panel
-        popup_height = 600
-
-        x_coordinate = int((self.root.winfo_x() + self.root.winfo_width() / 2) - (popup_width / 2))
-        y_coordinate = int((self.root.winfo_y() + self.root.winfo_height() / 2) - (popup_height / 2))
-
-        popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_coordinate, y_coordinate))
-
-        # Create a main frame to hold the scrollable content and the panel
-        main_frame = ttk.Frame(popup)
-        main_frame.pack(fill='both', expand=True)
-
-        # Create a frame inside the main frame to hold the scrollable content
-        container = ttk.Frame(main_frame)
-        container.pack(side="left", fill='both', expand=True)
-
-        # Create a canvas and add scrollbars to it
-        canvas = tk.Canvas(container)
-        scrollbar_y = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-        scrollbar_x = ttk.Scrollbar(container, orient="horizontal", command=canvas.xview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
-
-        scrollbar_y.pack(side="right", fill="y")
-        scrollbar_x.pack(side="bottom", fill="x")
-        canvas.pack(side="left", fill="both", expand=True)
-
-        # Create a panel frame to hold both the scrollable area and the button below it
-        panel_frame = ttk.Frame(main_frame, width=300)
-        panel_frame.pack(side="right", fill="y")
-
-        # Create a canvas for the scrollable part inside the panel
-        panel_canvas = tk.Canvas(panel_frame)
-        panel_scrollbar = ttk.Scrollbar(panel_frame, orient="vertical", command=panel_canvas.yview)
-        panel_canvas.configure(yscrollcommand=panel_scrollbar.set)
-        panel_scrollbar.pack(side="right", fill="y")
-        panel_canvas.pack(side="top", fill="both", expand=True)
-
-        # Create a frame inside the canvas to hold the scrollable content
-        scrollable_panel_frame = ttk.Frame(panel_canvas)
-        panel_canvas.create_window((0, 0), window=scrollable_panel_frame, anchor="nw")
-
-        # Configure grid to remove extra spacing
-        scrollable_panel_frame.grid_columnconfigure(0, weight=1)
-        scrollable_panel_frame.grid_columnconfigure(1, weight=1)
-
-        # Centered and styled Flow Rates title with no extra padding
-        title_font = ("Arial", 16, "bold")
-        title_label = ttk.Label(scrollable_panel_frame, text="Flow Rates", font=title_font)
-        title_label.grid(row=0, column=0, columnspan=2, pady=(5, 5), sticky="n")
-
-        # Assuming you have a way to retrieve the desired and generated flow rates for each cell
-        row_index = 1
-        for i, cell_loc in enumerate(updated_dict.keys()):
-            table_loc = (cell_loc[0] + most_upper_row, cell_loc[1] + most_left_col)
-
-            if self.table_obj.table[table_loc[0]][table_loc[1]].tile_type in Constants.Q_TILES \
-                    or self.table_obj.table[table_loc[0]][table_loc[1]].tile_type in Constants.END_TYPES:
-                desired_flow_rate = self.table_obj.table[table_loc[0]][table_loc[1]].flow_rate_in_this_cell
-                generated_flow_rate = self.table_obj.table[table_loc[0]][table_loc[1]].generated_flow_rate_in_this_cell
-
-                # Display the cell location
-                ttk.Label(scrollable_panel_frame, text=f"Cell {cell_loc}:").grid(row=row_index, column=0, columnspan=2,
-                                                                                 sticky="w", padx=10)
-                row_index += 1
-
-                # Display Desired Q and Generated Q side by side
-                ttk.Label(scrollable_panel_frame, text=f"Desired Q: {desired_flow_rate}").grid(row=row_index, column=0,
-                                                                                               sticky="w", padx=10)
-                ttk.Label(scrollable_panel_frame, text=f"Generated Q: {generated_flow_rate}").grid(row=row_index,
-                                                                                                   column=1, sticky="w",
-                                                                                                   padx=10)
-                row_index += 1
-
-                ttk.Separator(scrollable_panel_frame, orient='horizontal').grid(row=row_index, column=0, columnspan=2,
-                                                                                sticky="ew", pady=5)
-                row_index += 1
-
-        # Update the scroll region after adding widgets
-        scrollable_panel_frame.update_idletasks()
-        panel_canvas.configure(scrollregion=panel_canvas.bbox("all"))
-
-        # Add the download button below the scrollable panel content
-        download_button = ttk.Button(panel_frame, text="Download 3D Model",
-                                     command=lambda: self.download_3d_model(dict_for_3d_model))
-        download_button.pack(side="bottom", pady=10)
-
-        # Create the grid with images in the scrollable content area
-        for i in range(updated_most_lower_row + 1):
-            for j in range(updated_most_right_col + 1):
-                empty_cell_plot = plot_other_components("EMPTY", show_plot=False, shape=(20, 20))
-                resized_empty_cell_plot = self.resize_figure(empty_cell_plot, image_size)
-                img = ImageTk.PhotoImage(resized_empty_cell_plot)
-                img_label = ttk.Label(scrollable_frame, image=img)
-                img_label.image = img  # Keep a reference to avoid garbage collection
-                img_label.grid(row=i, column=j, padx=0, pady=0)
-
-        for cell_loc in updated_dict.keys():
-            (cell_res_matrix, cell_fig,
-             pipe_width, pipe_height, pipe_fillet_radius,
-             cell_type, cell_coming_dir) = updated_dict[cell_loc]
-            row, col = cell_loc  # cell_loc is a tuple (x, y)
-
-            resized_image = self.resize_figure(cell_fig, image_size)
-
-            img = ImageTk.PhotoImage(resized_image)
-            img_label = ttk.Label(scrollable_frame, image=img)
-            img_label.image = img  # Keep a reference to avoid garbage collection
-            img_label.grid(row=row, column=col, padx=0, pady=0)
-
-    def download_3d_model(self, DICT_FOR_3D_MODEL):
-
-        for key in DICT_FOR_3D_MODEL.keys():
-            print(key, DICT_FOR_3D_MODEL[key][0].shape, DICT_FOR_3D_MODEL[key][1],
-                  DICT_FOR_3D_MODEL[key][2],
-                  DICT_FOR_3D_MODEL[key][3], DICT_FOR_3D_MODEL[key][4],
-                  DICT_FOR_3D_MODEL[key][5], DICT_FOR_3D_MODEL[key][6])
-
-        popup = tk.Toplevel()
-        popup.title("Download Options")
-        popup.resizable(False, False)
-
-        # make mainGUI unresponsive
-        popup.grab_set()
-        popup.focus_set()
-        popup.transient(self.root)
-
-        # open in the center of the screen and make it on top of the mainGUI
-        popup.update_idletasks()
-        popup_width = 300
-        popup_height = 100
-
-        x_coordinate = int((self.root.winfo_x() + self.root.winfo_width() / 2) - (popup_width / 2))
-        y_coordinate = int((self.root.winfo_y() + self.root.winfo_height() / 2) - (popup_height / 2))
-
-        popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_coordinate, y_coordinate))
-
-        label = ttk.Label(popup, text="Downloading 3D model...", anchor="center")
-        label.pack(pady=10)
-
-        # put a progress bar
-        progress_bar = ttk.Progressbar(popup, maximum=100, length=300)
-        progress_bar.pack(pady=10)
-
-        combined_model, combined_model_with_base = build_whole_circuit(DICT_FOR_3D_MODEL, show_model=True)
+        circuit_popup = CircuitPopup(root=self.root, ALL_GENERATED_COMPONENTS=ALL_GENERATED_COMPONENTS,
+                                     table_obj=self.table_obj)
+        circuit_popup.open_circuit_popup()
