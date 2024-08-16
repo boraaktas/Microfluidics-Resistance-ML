@@ -1,4 +1,3 @@
-import io
 import tkinter as tk
 import traceback
 
@@ -357,6 +356,8 @@ class Main_Section:
 
                 generated_cell_count.set(generated_cell_count.get() + 1)
                 popup.update()
+
+        self.table_obj.set_generated_flow_rates(self.transformed_table)
 
         # when all the mazes are generated close this popup, and show new popup with all_cells_locs_and_types
         if popup is not None:
