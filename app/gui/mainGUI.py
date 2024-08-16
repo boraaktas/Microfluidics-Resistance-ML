@@ -3,7 +3,6 @@ import tkinter as tk
 import traceback
 
 import numpy as np
-import trimesh
 import ttkbootstrap as ttk
 from PIL import ImageTk, Image
 from matplotlib import pyplot as plt
@@ -11,7 +10,7 @@ from matplotlib import pyplot as plt
 from app.utils import (load_images, load_res_bounds, load_prediction_model,
                        R_calculator, Q_calculator, ResistanceGenerator, Constants, Table, Tile, TileType)
 from src.maze_functions import plot_other_components
-from src.modelling_3D.build_3D import build_3d_maze, import_stl
+from src.modelling_3D import build_whole_circuit
 from .menuGUI import Menu_Section
 from .tableGUI import Table_Section
 
@@ -228,6 +227,15 @@ class Main_Section:
                 # it will update transformed_table with the selected combinations
                 self.table_obj.set_selected_comb_to_all_components(self.transformed_table)
 
+                # update the resistance_in_this_cell attribute of the tiles
+                for i in range(len(self.resistance_dict)):
+                    # get the key and value of the resistance_dict
+                    current_key = list(self.resistance_dict.keys())[i]
+                    key_resistance = current_key[0]
+                    for value in self.resistance_dict[current_key]:
+                        coords = value[0]
+                        self.table_obj.table[coords[0]][coords[1]].resistance_in_this_cell = key_resistance
+
                 success_resistances = True
                 print("\n\n\n")
             except Exception as e:
@@ -318,13 +326,14 @@ class Main_Section:
             cell_step_size_factor = 0.5
             cell_side_length = 20
 
-            cell_resistance_matrix, fitness = RG.generate_resistance(desired_resistance=cell_res_value,
-                                                                     target_loc_mode=cell_target_loc_mode,
-                                                                     width=pipe_width,
-                                                                     height=pipe_height,
-                                                                     fillet_radius=pipe_fillet_radius,
-                                                                     step_size_factor=cell_step_size_factor,
-                                                                     side_length=cell_side_length)
+            (cell_resistance_matrix,
+             cell_resistance_value) = RG.generate_resistance(desired_resistance=cell_res_value,
+                                                             target_loc_mode=cell_target_loc_mode,
+                                                             width=pipe_width,
+                                                             height=pipe_height,
+                                                             fillet_radius=pipe_fillet_radius,
+                                                             step_size_factor=cell_step_size_factor,
+                                                             side_length=cell_side_length)
 
             all_cell_locs_and_types = self.resistance_dict[key]
             for cell_loc_type in all_cell_locs_and_types:
@@ -342,6 +351,10 @@ class Main_Section:
                                                           pipe_fillet_radius,
                                                           cur_cell_type,
                                                           cur_cell_coming_direction)
+
+                # update self.transformed_table with the cell_resistance_value
+                self.table_obj.table[cur_cell_loc[0]][cur_cell_loc[1]].generated_resistance_in_this_cell \
+                    = cell_resistance_value
 
                 generated_cell_count.set(generated_cell_count.get() + 1)
                 popup.update()
@@ -363,11 +376,10 @@ class Main_Section:
         return img
 
     def open_circuit_popup(self, ALL_GENERATED_COMPONENTS, image_size=(90, 90)):
-
         most_upper_row = min([cell_loc[0] for cell_loc in ALL_GENERATED_COMPONENTS.keys()])
         most_left_col = min([cell_loc[1] for cell_loc in ALL_GENERATED_COMPONENTS.keys()])
 
-        # update the dict according to the most upper row, most lower row, most left col, most right col
+        # Update the dict according to the most upper row, most lower row, most left col, most right col
         updated_dict = {}
         for cell_loc in ALL_GENERATED_COMPONENTS.keys():
             row, col = cell_loc
@@ -375,6 +387,12 @@ class Main_Section:
 
         updated_most_lower_row = max([cell_loc[0] for cell_loc in updated_dict.keys()])
         updated_most_right_col = max([cell_loc[1] for cell_loc in updated_dict.keys()])
+
+        dict_for_3d_model = {}
+        max_x = max([cell_loc[0] for cell_loc in updated_dict.keys()])
+        for key in updated_dict.keys():
+            new_key = (key[1], max_x - key[0])
+            dict_for_3d_model[new_key] = updated_dict[key]
 
         popup = tk.Toplevel()
         popup.title("Generated Circuit")
@@ -387,7 +405,7 @@ class Main_Section:
 
         # Open in the center of the screen and make it on top of the mainGUI
         popup.update_idletasks()
-        popup_width = 1000
+        popup_width = 1000  # Adjusted width for the panel
         popup_height = 600
 
         x_coordinate = int((self.root.winfo_x() + self.root.winfo_width() / 2) - (popup_width / 2))
@@ -395,13 +413,13 @@ class Main_Section:
 
         popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_coordinate, y_coordinate))
 
-        # Create a main frame to hold the scrollable content and the button
+        # Create a main frame to hold the scrollable content and the panel
         main_frame = ttk.Frame(popup)
         main_frame.pack(fill='both', expand=True)
 
         # Create a frame inside the main frame to hold the scrollable content
         container = ttk.Frame(main_frame)
-        container.pack(fill='both', expand=True)
+        container.pack(side="left", fill='both', expand=True)
 
         # Create a canvas and add scrollbars to it
         canvas = tk.Canvas(container)
@@ -423,11 +441,70 @@ class Main_Section:
         scrollbar_x.pack(side="bottom", fill="x")
         canvas.pack(side="left", fill="both", expand=True)
 
-        # according to updated_most_lower_row and updated_most_right_col, create a grid
+        # Create a panel frame to hold both the scrollable area and the button below it
+        panel_frame = ttk.Frame(main_frame, width=300)
+        panel_frame.pack(side="right", fill="y")
+
+        # Create a canvas for the scrollable part inside the panel
+        panel_canvas = tk.Canvas(panel_frame)
+        panel_scrollbar = ttk.Scrollbar(panel_frame, orient="vertical", command=panel_canvas.yview)
+        panel_canvas.configure(yscrollcommand=panel_scrollbar.set)
+        panel_scrollbar.pack(side="right", fill="y")
+        panel_canvas.pack(side="top", fill="both", expand=True)
+
+        # Create a frame inside the canvas to hold the scrollable content
+        scrollable_panel_frame = ttk.Frame(panel_canvas)
+        panel_canvas.create_window((0, 0), window=scrollable_panel_frame, anchor="nw")
+
+        # Configure grid to remove extra spacing
+        scrollable_panel_frame.grid_columnconfigure(0, weight=1)
+        scrollable_panel_frame.grid_columnconfigure(1, weight=1)
+
+        # Centered and styled Flow Rates title with no extra padding
+        title_font = ("Arial", 16, "bold")
+        title_label = ttk.Label(scrollable_panel_frame, text="Flow Rates", font=title_font)
+        title_label.grid(row=0, column=0, columnspan=2, pady=(5, 5), sticky="n")
+
+        # Assuming you have a way to retrieve the desired and generated flow rates for each cell
+        row_index = 1
+        for i, cell_loc in enumerate(updated_dict.keys()):
+            table_loc = (cell_loc[0] + most_upper_row, cell_loc[1] + most_left_col)
+
+            if self.table_obj.table[table_loc[0]][table_loc[1]].tile_type in Constants.Q_TILES \
+                    or self.table_obj.table[table_loc[0]][table_loc[1]].tile_type in Constants.END_TYPES:
+                desired_flow_rate = self.table_obj.table[table_loc[0]][table_loc[1]].flow_rate_in_this_cell
+                generated_flow_rate = self.table_obj.table[table_loc[0]][table_loc[1]].generated_flow_rate_in_this_cell
+
+                # Display the cell location
+                ttk.Label(scrollable_panel_frame, text=f"Cell {cell_loc}:").grid(row=row_index, column=0, columnspan=2,
+                                                                                 sticky="w", padx=10)
+                row_index += 1
+
+                # Display Desired Q and Generated Q side by side
+                ttk.Label(scrollable_panel_frame, text=f"Desired Q: {desired_flow_rate}").grid(row=row_index, column=0,
+                                                                                               sticky="w", padx=10)
+                ttk.Label(scrollable_panel_frame, text=f"Generated Q: {generated_flow_rate}").grid(row=row_index,
+                                                                                                   column=1, sticky="w",
+                                                                                                   padx=10)
+                row_index += 1
+
+                ttk.Separator(scrollable_panel_frame, orient='horizontal').grid(row=row_index, column=0, columnspan=2,
+                                                                                sticky="ew", pady=5)
+                row_index += 1
+
+        # Update the scroll region after adding widgets
+        scrollable_panel_frame.update_idletasks()
+        panel_canvas.configure(scrollregion=panel_canvas.bbox("all"))
+
+        # Add the download button below the scrollable panel content
+        download_button = ttk.Button(panel_frame, text="Download 3D Model",
+                                     command=lambda: self.download_3d_model(dict_for_3d_model))
+        download_button.pack(side="bottom", pady=10)
+
+        # Create the grid with images in the scrollable content area
         for i in range(updated_most_lower_row + 1):
             for j in range(updated_most_right_col + 1):
                 empty_cell_plot = plot_other_components("EMPTY", show_plot=False, shape=(20, 20))
-                # put an empty image with the size of image_size with white background
                 resized_empty_cell_plot = self.resize_figure(empty_cell_plot, image_size)
                 img = ImageTk.PhotoImage(resized_empty_cell_plot)
                 img_label = ttk.Label(scrollable_frame, image=img)
@@ -438,7 +515,7 @@ class Main_Section:
             (cell_res_matrix, cell_fig,
              pipe_width, pipe_height, pipe_fillet_radius,
              cell_type, cell_coming_dir) = updated_dict[cell_loc]
-            row, col = cell_loc  # Assuming cell_loc is a tuple (x, y)
+            row, col = cell_loc  # cell_loc is a tuple (x, y)
 
             resized_image = self.resize_figure(cell_fig, image_size)
 
@@ -446,17 +523,6 @@ class Main_Section:
             img_label = ttk.Label(scrollable_frame, image=img)
             img_label.image = img  # Keep a reference to avoid garbage collection
             img_label.grid(row=row, column=col, padx=0, pady=0)
-
-        dict_for_3d_model = {}
-        max_x = max([cell_loc[0] for cell_loc in updated_dict.keys()])
-        for key in updated_dict.keys():
-            new_key = (key[1], max_x - key[0])
-            dict_for_3d_model[new_key] = updated_dict[key]
-
-        # Add the download button outside the scrollable frame
-        download_button = ttk.Button(main_frame, text="Download 3D Model",
-                                     command=lambda: self.download_3d_model(dict_for_3d_model))
-        download_button.pack(side="bottom", pady=10)
 
     def download_3d_model(self, DICT_FOR_3D_MODEL):
 
@@ -492,138 +558,4 @@ class Main_Section:
         progress_bar = ttk.Progressbar(popup, maximum=100, length=300)
         progress_bar.pack(pady=10)
 
-        # Constants
-        base_height = 1
-        base_side = 10
-
-        # Read the dictionary and create a 3D model
-        max_x = max([cell_loc[0] for cell_loc in DICT_FOR_3D_MODEL.keys()])
-        max_y = max([cell_loc[1] for cell_loc in DICT_FOR_3D_MODEL.keys()])
-
-        model_3d_dict = {}
-        for i in range(max_x + 1):
-            for j in range(max_y + 1):
-                if (i, j) in DICT_FOR_3D_MODEL.keys():
-                    (cell_res_matrix, cell_fig,
-                     pipe_width, pipe_height, pipe_fillet_radius,
-                     cell_type, cell_coming_dir) = DICT_FOR_3D_MODEL[(i, j)]
-                    cell_type_str = str(cell_type).split(".")[1]
-
-                    if ("START" not in cell_type_str and "FLOW" not in cell_type_str and "END" not in cell_type_str and
-                            "DIVISION" not in cell_type_str):
-
-                        # Build a base under the maze_3d
-                        base = trimesh.creation.box(extents=[base_side, base_side, base_height])
-                        # Make the base white
-                        base.visual.face_colors = [255, 255, 255, 255]
-
-                        maze_3d = build_3d_maze(maze=cell_res_matrix,
-                                                step_size_factor=0.5,
-                                                width=pipe_width,
-                                                height=pipe_height,
-                                                fillet_radius=pipe_fillet_radius)
-
-                        maze_3d.apply_translation([(-base_side / 2), (-base_side / 2), (base_height / 2)])
-                        maze_3d = trimesh.util.concatenate([maze_3d, base])
-
-                        model_3d_dict[(i, j)] = maze_3d
-
-                    else:
-
-                        imported_component = import_stl(cell_type_str=cell_type_str,
-                                                        coming_direction=str(cell_coming_dir),
-                                                        width=pipe_width,
-                                                        height=pipe_height)
-
-                        imported_component.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2,
-                                                                                                   [1, 0, 0]))
-                        imported_component.apply_translation([(-base_side / 2), (base_side / 2), (-base_height / 2)])
-
-                        model_3d_dict[(i, j)] = imported_component
-
-                elif (i, j) not in DICT_FOR_3D_MODEL.keys():
-
-                    # Build a base under the empty_cell
-                    base = trimesh.creation.box(extents=[base_side, base_side, base_height])
-                    # Make the base white
-                    base.visual.face_colors = [255, 255, 255, 255]
-
-                    model_3d_dict[(i, j)] = base
-
-        # Scaled the keys of the model_3d_dict
-        for key in model_3d_dict.keys():
-            model_3d_dict[key] = (model_3d_dict[key], key[0] * base_side, key[1] * base_side)
-
-        # Move the every component to the key coordinates
-        for key in model_3d_dict.keys():
-            model_3d_dict[key][0].apply_translation([model_3d_dict[key][1], model_3d_dict[key][2], 0])
-
-        # Combine all the components
-        combined_model = trimesh.Trimesh()
-        for key in model_3d_dict.keys():
-            combined_model = trimesh.util.concatenate([combined_model, model_3d_dict[key][0]])
-
-        # Delete the base and replace it with the white base
-        plane_origin = np.array([0, 0, 0.5])  # point on the plane
-        plane_normal = np.array([0, 0, 1])  # normal vector of the plane (z direction)
-
-        # Slice the mesh using the plane
-        combined_model = combined_model.slice_plane(plane_origin, plane_normal)
-
-        combined_model.show(resolution=(1024, 768))
-
-        # Adding the Base Part
-        bottom_base = trimesh.creation.box(extents=[(max_x + 1) * base_side, (max_y + 1) * base_side, base_height])
-        bottom_base.visual.face_colors = [255, 255, 255, 255]
-        bottom_base.apply_translation([max_x * 5, max_y * 5, 0])
-
-        combined_model = trimesh.util.concatenate([combined_model, bottom_base])
-
-        # Building the walls
-        small_wall_height = 0.4
-        small_wall_thickness = 0.5
-        small_inside_wall = trimesh.creation.box(
-            extents=[((max_x + 1) * base_side), ((max_y + 1) * base_side), (base_height + small_wall_height)])
-        small_outside_wall = trimesh.creation.box(
-            extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
-                     (base_height + small_wall_height)])
-        small_wall = small_outside_wall.difference(small_inside_wall)
-        small_wall.apply_translation(
-            [max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
-
-        dist_big_small = 2.5
-        bottom_outer = trimesh.creation.box(extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
-                                                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
-                                                     base_height])
-        bottom_inner = trimesh.creation.box(
-            extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
-                     base_height])
-        bottom = bottom_outer.difference(bottom_inner)
-        bottom.visual.face_colors = [255, 255, 255, 255]
-        bottom.apply_translation([max_x * 5, max_y * 5, 0])
-
-        big_wall_height = 3.7
-        big_wall_thickness = 1
-        big_inside_wall = trimesh.creation.box(
-            extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
-                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
-                     (base_height + big_wall_height)])
-        big_outside_wall = trimesh.creation.box(
-            extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
-                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
-                     (base_height + big_wall_height)])
-        big_wall = big_outside_wall.difference(big_inside_wall)
-        big_wall.apply_translation([max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
-
-        walls = trimesh.util.concatenate([small_wall, bottom, big_wall])
-
-        # Combine the walls with the combined_model
-        combined_model = trimesh.util.concatenate([combined_model, walls])
-
-        biggest_bottom_box = trimesh.creation.box(extents=[(max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
-                                                           (max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
-                                                           3])
-        biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.5])
-        combined_model = trimesh.util.concatenate([combined_model, biggest_bottom_box])
-
-        combined_model.show()
+        combined_model, combined_model_with_base = build_whole_circuit(DICT_FOR_3D_MODEL, show_model=True)
