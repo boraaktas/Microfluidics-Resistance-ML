@@ -357,7 +357,6 @@ class Table:
                 coords_tile = l_l[i][0]
                 self.table[coords_tile[0]][coords_tile[1]].flow_rate_in_this_cell = found_flow_rate
 
-
     @staticmethod
     def get_next_tile_coordinates(cur_x: int, cur_y: int, direction: str) -> tuple[int, int]:
         if direction == "north":

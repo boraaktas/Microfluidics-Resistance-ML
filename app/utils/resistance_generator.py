@@ -23,7 +23,7 @@ class ResistanceGenerator:
                             height: float,
                             fillet_radius: float,
                             step_size_factor: float,
-                            side_length: float) -> np.ndarray:
+                            side_length: float) -> tuple[np.ndarray, float]:
         """
         Generates a cell resistance matrix for the given parameters.
 
@@ -37,6 +37,7 @@ class ResistanceGenerator:
         :param side_length: The side length of the cell.
 
         :return: cell_resistance: The cell resistance matrix of the maze.
+        :return: cell_resistance_value: The predicted resistance value of the maze.
         """
 
         generative_model = GenerativeModel(prediction_model=self.prediction_model,
@@ -49,9 +50,10 @@ class ResistanceGenerator:
                                            method=None,
                                            side_length=side_length)
 
-        cell_resistance = generative_model.generate_maze()
+        cell_resistance_matrix, fitness = generative_model.generate_maze()
+        cell_resistance_value = generative_model.predict_resistance(cell_resistance_matrix)
 
-        return cell_resistance
+        return cell_resistance_matrix, cell_resistance_value
 
     @staticmethod
     def adjust_orientation(cell_resistance_matrix: np.ndarray,
