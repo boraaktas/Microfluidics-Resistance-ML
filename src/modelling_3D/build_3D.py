@@ -83,12 +83,12 @@ def create_cylinder_between_points(start, end, radius, direction):
     return quarter_cylinder
 
 
-def build_3d_maze(maze: np.ndarray,
-                  step_size_factor: float,
-                  width: float,
-                  height: float,
-                  fillet_radius: float,
-                  ) -> trimesh.Trimesh:
+def build_3d_cell_maze(maze: np.ndarray,
+                       step_size_factor: float,
+                       width: float,
+                       height: float,
+                       fillet_radius: float,
+                       ) -> trimesh.Trimesh:
     """
     This function builds a 3D model of the maze.
     :param maze: A 2D numpy array representing the maze where 0s are open paths, -1s are walls,
@@ -307,6 +307,149 @@ def import_stl(cell_type_str: str,
     mesh_rotated.apply_translation(mesh_centroid - mesh_rotated_centroid)
 
     return mesh_rotated
+
+
+def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
+                        show_model: bool = False) -> tuple[trimesh.Trimesh, trimesh.Trimesh]:
+
+    # Constants
+    base_height = 1
+    base_side = 10
+
+    # Read the dictionary and create a 3D model
+    max_x = max([cell_loc[0] for cell_loc in DICT_FOR_3D_MODEL.keys()])
+    max_y = max([cell_loc[1] for cell_loc in DICT_FOR_3D_MODEL.keys()])
+
+    model_3d_dict = {}
+    for i in range(max_x + 1):
+        for j in range(max_y + 1):
+            if (i, j) in DICT_FOR_3D_MODEL.keys():
+                (cell_res_matrix, cell_fig,
+                 pipe_width, pipe_height, pipe_fillet_radius,
+                 cell_type, cell_coming_dir) = DICT_FOR_3D_MODEL[(i, j)]
+                cell_type_str = str(cell_type).split(".")[1]
+
+                if ("START" not in cell_type_str and "FLOW" not in cell_type_str and "END" not in cell_type_str and
+                        "DIVISION" not in cell_type_str):
+
+                    # Build a base under the maze_3d
+                    base = trimesh.creation.box(extents=[base_side, base_side, base_height])
+                    # Make the base white
+                    base.visual.face_colors = [255, 255, 255, 255]
+
+                    maze_3d = build_3d_cell_maze(maze=cell_res_matrix,
+                                                 step_size_factor=0.5,
+                                                 width=pipe_width,
+                                                 height=pipe_height,
+                                                 fillet_radius=pipe_fillet_radius)
+
+                    maze_3d.apply_translation([(-base_side / 2), (-base_side / 2), (base_height / 2)])
+                    maze_3d = trimesh.util.concatenate([maze_3d, base])
+
+                    model_3d_dict[(i, j)] = maze_3d
+
+                else:
+
+                    imported_component = import_stl(cell_type_str=cell_type_str,
+                                                    coming_direction=str(cell_coming_dir),
+                                                    width=pipe_width,
+                                                    height=pipe_height)
+
+                    imported_component.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2,
+                                                                                               [1, 0, 0]))
+                    imported_component.apply_translation([(-base_side / 2), (base_side / 2), (-base_height / 2)])
+
+                    model_3d_dict[(i, j)] = imported_component
+
+            elif (i, j) not in DICT_FOR_3D_MODEL.keys():
+
+                # Build a base under the empty_cell
+                base = trimesh.creation.box(extents=[base_side, base_side, base_height])
+                # Make the base white
+                base.visual.face_colors = [255, 255, 255, 255]
+
+                model_3d_dict[(i, j)] = base
+
+    # Scaled the keys of the model_3d_dict
+    for key in model_3d_dict.keys():
+        model_3d_dict[key] = (model_3d_dict[key], key[0] * base_side, key[1] * base_side)
+
+    # Move the every component to the key coordinates
+    for key in model_3d_dict.keys():
+        model_3d_dict[key][0].apply_translation([model_3d_dict[key][1], model_3d_dict[key][2], 0])
+
+    # Combine all the components
+    combined_model = trimesh.Trimesh()
+    for key in model_3d_dict.keys():
+        combined_model = trimesh.util.concatenate([combined_model, model_3d_dict[key][0]])
+
+    # Delete the base and replace it with the white base
+    plane_origin = np.array([0, 0, 0.5])  # point on the plane
+    plane_normal = np.array([0, 0, 1])  # normal vector of the plane (z direction)
+
+    # Slice the mesh using the plane
+    combined_model = combined_model.slice_plane(plane_origin, plane_normal)
+
+    # Adding the Base Part
+    bottom_base = trimesh.creation.box(extents=[(max_x + 1) * base_side, (max_y + 1) * base_side, base_height])
+    bottom_base.visual.face_colors = [255, 255, 255, 255]
+    bottom_base.apply_translation([max_x * 5, max_y * 5, 0])
+
+    combined_model_with_base = trimesh.util.concatenate([combined_model, bottom_base])
+
+    # Building the walls
+    small_wall_height = 0.4
+    small_wall_thickness = 0.5
+    small_inside_wall = trimesh.creation.box(
+        extents=[((max_x + 1) * base_side), ((max_y + 1) * base_side), (base_height + small_wall_height)])
+    small_outside_wall = trimesh.creation.box(
+        extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+                 (base_height + small_wall_height)])
+    small_wall = small_outside_wall.difference(small_inside_wall)
+    small_wall.apply_translation(
+        [max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
+
+    dist_big_small = 2.5
+    bottom_outer = trimesh.creation.box(extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
+                                                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+                                                 base_height])
+    bottom_inner = trimesh.creation.box(
+        extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+                 base_height])
+    bottom = bottom_outer.difference(bottom_inner)
+    bottom.visual.face_colors = [255, 255, 255, 255]
+    bottom.apply_translation([max_x * 5, max_y * 5, 0])
+
+    big_wall_height = 3.7
+    big_wall_thickness = 1
+    big_inside_wall = trimesh.creation.box(
+        extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
+                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+                 (base_height + big_wall_height)])
+    big_outside_wall = trimesh.creation.box(
+        extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+                 (base_height + big_wall_height)])
+    big_wall = big_outside_wall.difference(big_inside_wall)
+    big_wall.apply_translation([max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
+
+    walls = trimesh.util.concatenate([small_wall, bottom, big_wall])
+
+    # Combine the walls with the combined_model_with_base
+    combined_model_with_base = trimesh.util.concatenate([combined_model_with_base, walls])
+
+    biggest_bottom_box = trimesh.creation.box(
+        extents=[(max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+                 (max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+                 3])
+    biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.5])
+    combined_model_with_base = trimesh.util.concatenate([combined_model_with_base, biggest_bottom_box])
+
+    if show_model:
+        combined_model.show(resolution=(1024, 768))
+        combined_model_with_base.show(resolution=(1024, 768))
+
+    return combined_model, combined_model_with_base
 
 
 if __name__ == '__main__':

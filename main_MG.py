@@ -3,7 +3,7 @@ from src.machine_learning import PredictionModel
 from src.maze_functions import (random_maze_generator,
                                 extract_features,
                                 plot_maze)
-from src.modelling_3D import build_3d_maze
+from src.modelling_3D import build_3d_cell_maze
 
 
 def random_maze():
@@ -19,8 +19,8 @@ def random_maze():
     FEATURES_DICT = extract_features(MAZE, STEP_SIZE_FACTOR, WIDTH, HEIGHT, FILLET_RADIUS)
     print(FEATURES_DICT)
 
-    maze = build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR,
-                         width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+    maze = build_3d_cell_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR,
+                              width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
     maze.show()
 
     PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
@@ -64,7 +64,7 @@ def generate_desired_maze():
     print(f"Desired resistance: {DESIRED_RESISTANCE}")
     print(f"The resistance of the maze is: {generative_model.predict_resistance(maze=MAZE)}, with fitness: {FITNESS}")
 
-    build_3d_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+    build_3d_cell_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
 
 
 if __name__ == '__main__':
