@@ -277,7 +277,7 @@ class Main_Section:
 
         RG = ResistanceGenerator(self.prediction_model)
 
-        ALL_GENERATED_COMPONENTS\
+        ALL_GENERATED_COMPONENTS \
             : dict[tuple[int, int], tuple[np.ndarray, plt.Figure, float, float, float, TileType, str]] = {}
 
         entry_pressures = self.table_obj.find_entry_pressures()
@@ -426,7 +426,6 @@ class Main_Section:
         # according to updated_most_lower_row and updated_most_right_col, create a grid
         for i in range(updated_most_lower_row + 1):
             for j in range(updated_most_right_col + 1):
-
                 empty_cell_plot = plot_other_components("EMPTY", show_plot=False, shape=(20, 20))
                 # put an empty image with the size of image_size with white background
                 resized_empty_cell_plot = self.resize_figure(empty_cell_plot, image_size)
@@ -510,7 +509,8 @@ class Main_Section:
                      cell_type, cell_coming_dir) = DICT_FOR_3D_MODEL[(i, j)]
                     cell_type_str = str(cell_type).split(".")[1]
 
-                    if pipe_width != -1 and pipe_height != -1 and pipe_fillet_radius != -1:
+                    if ("START" not in cell_type_str and "FLOW" not in cell_type_str and "END" not in cell_type_str and
+                            "DIVISION" not in cell_type_str):
 
                         # Build a base under the maze_3d
                         base = trimesh.creation.box(extents=[base_side, base_side, base_height])
@@ -529,11 +529,9 @@ class Main_Section:
                         model_3d_dict[(i, j)] = maze_3d
 
                     else:
-                        pipe_width = 0.05
-                        pipe_height = 0.05
 
                         imported_component = import_stl(cell_type_str=cell_type_str,
-                                                        coming_direction=None,
+                                                        coming_direction=str(cell_coming_dir),
                                                         width=pipe_width,
                                                         height=pipe_height)
 
@@ -565,31 +563,67 @@ class Main_Section:
         for key in model_3d_dict.keys():
             combined_model = trimesh.util.concatenate([combined_model, model_3d_dict[key][0]])
 
+        # Delete the base and replace it with the white base
+        plane_origin = np.array([0, 0, 0.5])  # point on the plane
+        plane_normal = np.array([0, 0, 1])  # normal vector of the plane (z direction)
+
+        # Slice the mesh using the plane
+        combined_model = combined_model.slice_plane(plane_origin, plane_normal)
+
+        combined_model.show(resolution=(1024, 768))
+
+        # Adding the Base Part
+        bottom_base = trimesh.creation.box(extents=[(max_x + 1) * base_side, (max_y + 1) * base_side, base_height])
+        bottom_base.visual.face_colors = [255, 255, 255, 255]
+        bottom_base.apply_translation([max_x * 5, max_y * 5, 0])
+
+        combined_model = trimesh.util.concatenate([combined_model, bottom_base])
+
         # Building the walls
         small_wall_height = 0.4
         small_wall_thickness = 0.5
-        small_inside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side), ((max_y + 1)*base_side), (base_height + small_wall_height)])
-        small_outside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness), (base_height + small_wall_height)])
+        small_inside_wall = trimesh.creation.box(
+            extents=[((max_x + 1) * base_side), ((max_y + 1) * base_side), (base_height + small_wall_height)])
+        small_outside_wall = trimesh.creation.box(
+            extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+                     (base_height + small_wall_height)])
         small_wall = small_outside_wall.difference(small_inside_wall)
-        small_wall.apply_translation([max_x*5, max_y*5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
+        small_wall.apply_translation(
+            [max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
 
         dist_big_small = 2.5
-        bottom_outer= trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small), base_height])
-        bottom_inner = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness), base_height])
+        bottom_outer = trimesh.creation.box(extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
+                                                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+                                                     base_height])
+        bottom_inner = trimesh.creation.box(
+            extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+                     base_height])
         bottom = bottom_outer.difference(bottom_inner)
         bottom.visual.face_colors = [255, 255, 255, 255]
-        bottom.apply_translation([max_x*5, max_y*5, 0])
+        bottom.apply_translation([max_x * 5, max_y * 5, 0])
 
         big_wall_height = 3.7
         big_wall_thickness = 1
-        big_inside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small), (base_height + big_wall_height)])
-        big_outside_wall = trimesh.creation.box(extents=[((max_x + 1)*base_side + small_wall_thickness + dist_big_small + big_wall_thickness), ((max_y + 1)*base_side + small_wall_thickness + dist_big_small + big_wall_thickness), (base_height + big_wall_height)])
+        big_inside_wall = trimesh.creation.box(
+            extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
+                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+                     (base_height + big_wall_height)])
+        big_outside_wall = trimesh.creation.box(
+            extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+                     ((max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+                     (base_height + big_wall_height)])
         big_wall = big_outside_wall.difference(big_inside_wall)
-        big_wall.apply_translation([max_x*5, max_y*5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
+        big_wall.apply_translation([max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
 
         walls = trimesh.util.concatenate([small_wall, bottom, big_wall])
 
         # Combine the walls with the combined_model
         combined_model = trimesh.util.concatenate([combined_model, walls])
+
+        biggest_bottom_box = trimesh.creation.box(extents=[(max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+                                                           (max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+                                                           3])
+        biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.5])
+        combined_model = trimesh.util.concatenate([combined_model, biggest_bottom_box])
 
         combined_model.show()

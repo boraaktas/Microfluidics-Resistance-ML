@@ -76,7 +76,7 @@ class GenerativeModel:
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode=path_finding_mode)
+                                            path_finding_mode="random")
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness

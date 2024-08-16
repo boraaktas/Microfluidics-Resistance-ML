@@ -205,6 +205,7 @@ def import_stl(cell_type_str: str,
     file_type_str = ""
 
     cell_direction_str = ""
+    division_symmetric = ""
 
     if "START" in cell_type_str or "END" in cell_type_str:
         file_cell_type_str = "START_END"
@@ -216,13 +217,19 @@ def import_stl(cell_type_str: str,
     elif "DIVISION_3" in cell_type_str:
         file_cell_type_str = "DIVISION_3"
     elif "DIVISION_2" in cell_type_str:
-        file_cell_type_str = "DIVISION_2"
+        file_cell_type_str = "DIVISON_2"
         cell_direction_str = cell_type_str.split("_")[3]
-
-        file_type_str = "t1"
-
+        if cell_direction_str.lower() == coming_direction:
+            file_type_str = "t1"
+        else:
+            file_type_str = "t2"
+            if (cell_direction_str == "SOUTH" and coming_direction == "west") or (
+                    cell_direction_str == "EAST" and coming_direction == "south") or (
+                    cell_direction_str == "NORTH" and coming_direction == "east") or (
+                    cell_direction_str == "WEST" and coming_direction == "north"):
+                division_symmetric = "symmetric"
     elif "FLOW_RATE_CALCULATOR" in cell_type_str:
-        file_cell_type_str = "FLOW_RATE"
+        file_cell_type_str = "FLOW_RATE_CALCULATOR"
         cell_direction_str = cell_type_str.split("_")[3]
 
         file_type_str = "v9"
@@ -235,7 +242,10 @@ def import_stl(cell_type_str: str,
     if file_type_str == "":
         file_path = f"{stl_folder}{file_cell_type_str}_{width_height_str}.STL"
     else:
-        file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{width_height_str}.STL"
+        if division_symmetric == "":
+            file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{width_height_str}.STL"
+        elif division_symmetric == "symmetric":
+            file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{division_symmetric}_{width_height_str}.STL"
 
     # Load the mesh from the file path to the origin (0, 0, 0) of the world
     mesh = trimesh.load_mesh(file_path)
@@ -257,7 +267,7 @@ def import_stl(cell_type_str: str,
     elif file_cell_type_str == "DIVISION_3":
         pass
 
-    elif file_cell_type_str == "DIVISION_2":
+    elif file_cell_type_str == "DIVISON_2":
         if file_type_str == "t1":
             if cell_direction_str == "EAST":
                 mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
@@ -268,9 +278,24 @@ def import_stl(cell_type_str: str,
             elif cell_direction_str == "NORTH":
                 mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
         elif file_type_str == "t2":
-            pass
+            if cell_direction_str == "NORTH" and coming_direction == "west":
+                pass
+            elif cell_direction_str == "WEST" and coming_direction == "south":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
+            elif cell_direction_str == "SOUTH" and coming_direction == "east":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+            elif cell_direction_str == "EAST" and coming_direction == "north":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
+            elif cell_direction_str == "NORTH" and coming_direction == "east" and division_symmetric == "symmetric":
+                pass
+            elif cell_direction_str == "EAST" and coming_direction == "south" and division_symmetric == "symmetric":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(-np.pi / 2, [0, 1, 0]))
+            elif cell_direction_str == "SOUTH" and coming_direction == "west" and division_symmetric == "symmetric":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0]))
+            elif cell_direction_str == "WEST" and coming_direction == "north" and division_symmetric == "symmetric":
+                mesh_rotated.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0]))
 
-    elif file_cell_type_str == "FLOW_RATE":
+    elif file_cell_type_str == "FLOW_RATE_CALCULATOR":
         if cell_direction_str == "HORIZONTAL":
             pass
         elif cell_direction_str == "VERTICAL":
