@@ -4,11 +4,12 @@ from typing import Optional
 import numpy as np
 
 from src.machine_learning import PredictionModel
-from src.maze_functions import (complete_maze,
-                                random_maze_generator,
+from src.maze_functions import (random_maze_generator,
                                 extract_features,
                                 get_coord_list_matrix,
-                                get_coord_corners_list)
+                                get_coord_corners_list,
+                                destruct_maze,
+                                repair_maze)
 from .simulated_annealing import SA
 from .tabu_search import TS
 
@@ -211,19 +212,19 @@ class GenerativeModel:
                                                            )
 
         # ----------- DESTRUCT THE MAZE -----------
-        (DELETED_MAZE,
-         DELETED_LOCATIONS_IN_MAZE,
-         SORTED_INDICES) = GenerativeModel.destruct_maze(maze=maze,
-                                                         locations_in_maze=LOCATIONS_IN_MAZE,
-                                                         index_1=RANDOM_INDEX,
-                                                         index_2=first_index)
+        DELETED_MAZE, DELETED_LOCATIONS_IN_MAZE = destruct_maze(maze=maze,
+                                                                locations_in_maze=LOCATIONS_IN_MAZE,
+                                                                index_1=RANDOM_INDEX,
+                                                                index_2=first_index)
+
+        SORTED_INDICES = np.sort([RANDOM_INDEX, first_index])
 
         # ----------- REPAIR THE MAZE -----------
-        NEW_MAZE = GenerativeModel.repair_maze(deleted_maze=DELETED_MAZE,
-                                               old_maze=maze,
-                                               locations_in_maze=LOCATIONS_IN_MAZE,
-                                               random_indices=SORTED_INDICES,
-                                               repair_mode=repair_mode)
+        NEW_MAZE = repair_maze(deleted_maze=DELETED_MAZE,
+                               old_maze=maze,
+                               locations_in_maze=LOCATIONS_IN_MAZE,
+                               random_indices=SORTED_INDICES,
+                               repair_mode=repair_mode)
 
         NUMBER_OF_DELETED_CELLS = len(DELETED_LOCATIONS_IN_MAZE)
 
@@ -260,19 +261,19 @@ class GenerativeModel:
                                                              max_distance_between_indices=max_cells_to_delete)
 
         # ----------- DESTRUCT THE MAZE -----------
-        (DELETED_MAZE,
-         DELETED_LOCATIONS_IN_MAZE,
-         SORTED_INDICES) = GenerativeModel.destruct_maze(maze=maze,
-                                                         locations_in_maze=LOCATIONS_IN_MAZE,
-                                                         index_1=RANDOM_INDEX_1,
-                                                         index_2=RANDOM_INDEX_2)
+        DELETED_MAZE, DELETED_LOCATIONS_IN_MAZE = destruct_maze(maze=maze,
+                                                                locations_in_maze=LOCATIONS_IN_MAZE,
+                                                                index_1=RANDOM_INDEX_1,
+                                                                index_2=RANDOM_INDEX_2)
+
+        SORTED_INDICES = np.sort([RANDOM_INDEX_1, RANDOM_INDEX_2])
 
         # ----------- REPAIR THE MAZE -----------
-        NEW_MAZE = GenerativeModel.repair_maze(deleted_maze=DELETED_MAZE,
-                                               old_maze=maze,
-                                               locations_in_maze=LOCATIONS_IN_MAZE,
-                                               random_indices=SORTED_INDICES,
-                                               repair_mode=repair_mode)
+        NEW_MAZE = repair_maze(deleted_maze=DELETED_MAZE,
+                               old_maze=maze,
+                               locations_in_maze=LOCATIONS_IN_MAZE,
+                               random_indices=SORTED_INDICES,
+                               repair_mode=repair_mode)
 
         NUMBER_OF_DELETED_CELLS = len(DELETED_LOCATIONS_IN_MAZE)
 
@@ -338,47 +339,3 @@ class GenerativeModel:
             raise ValueError("selection_mode should be either 'from_lines' or 'from_corners'")
 
         return random_index
-
-    @staticmethod
-    def destruct_maze(maze: np.ndarray,
-                      locations_in_maze: list[list[int]],
-                      index_1: int,
-                      index_2: int) -> tuple[np.ndarray, list[list[int]], np.ndarray]:
-
-        sorted_indices = np.sort([index_1, index_2])
-
-        deleted_locations_in_maze = locations_in_maze[sorted_indices[0]: sorted_indices[1]]
-
-        deleted_maze = np.copy(maze)
-        for X, Y, V in deleted_locations_in_maze:
-            deleted_maze[X, Y] = 0
-
-        return deleted_maze, deleted_locations_in_maze, sorted_indices
-
-    @staticmethod
-    def repair_maze(deleted_maze: np.ndarray,
-                    old_maze: np.ndarray,
-                    locations_in_maze: list[list[int]],
-                    random_indices: np.ndarray,
-                    repair_mode: str) -> np.ndarray:
-
-        LEFT_LOCATIONS = get_coord_list_matrix(deleted_maze)
-
-        LAST_LOCATION_BEFORE_EMPTY = locations_in_maze[random_indices[0] - 1]
-
-        TARGET_LOCATION = (locations_in_maze[random_indices[1]][0], locations_in_maze[random_indices[1]][1])
-        START_COORDS = [LAST_LOCATION_BEFORE_EMPTY[0], LAST_LOCATION_BEFORE_EMPTY[1],
-                        old_maze[LAST_LOCATION_BEFORE_EMPTY[0], LAST_LOCATION_BEFORE_EMPTY[1]].item()]
-
-        NEW_MAZE = complete_maze(deleted_maze,
-                                 START_COORDS,
-                                 TARGET_LOCATION,
-                                 LEFT_LOCATIONS,
-                                 repair_mode)
-
-        return NEW_MAZE
-
-    @staticmethod
-    def pretty_print_maze(maze: np.ndarray):
-        for row in maze:
-            print(" ".join(str(cell).rjust(4) for cell in row))

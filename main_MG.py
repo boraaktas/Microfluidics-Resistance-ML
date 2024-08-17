@@ -4,7 +4,8 @@ from src.generative_model import GenerativeModel
 from src.machine_learning import PredictionModel
 from src.maze_functions import (random_maze_generator,
                                 extract_features,
-                                plot_maze)
+                                plot_maze,
+                                pretty_print_maze)
 from src.modelling_3D import build_3d_cell_maze
 
 
@@ -65,10 +66,10 @@ def generate_desired_maze():
                                        side_length=SIDE_LENGTH,
                                        time_limit=TIME_LIMIT,
                                        plot_bool=True,
-                                       print_iteration=False)
+                                       print_iteration=True)
 
     MAZE, FITNESS = generative_model.generate_maze()
-    GenerativeModel.pretty_print_maze(MAZE)
+    pretty_print_maze(MAZE)
     plot_maze(MAZE)
 
     print(f"Desired resistance: {DESIRED_RESISTANCE}")
