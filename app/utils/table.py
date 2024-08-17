@@ -357,9 +357,65 @@ class Table:
                 coords_tile = l_l[i][0]
                 self.table[coords_tile[0]][coords_tile[1]].flow_rate_in_this_cell = found_flow_rate
 
+    def find_resistance_between_two_points(self, transformed_table):
+        serial_resistance = 0
+        parallel_resistance = 0
+        for i in range(len(transformed_table)):
+            cur_element = transformed_table[i]
+            # if the first element of the current element is a tuple
+            if isinstance(cur_element[0], tuple):
+                cur_element_resistance = cur_element[1].generated_resistance_in_this_cell
+                if cur_element_resistance is not None:
+                    serial_resistance += cur_element[1].generated_resistance_in_this_cell
+            else:
+                cur_element_resistance = self.find_resistance_between_two_points(cur_element)
+                parallel_resistance += 1 / cur_element_resistance
+
+        total_res = serial_resistance + 1 / parallel_resistance if parallel_resistance != 0 else serial_resistance
+
+        return total_res
+
+    def set_generated_flow_rates_between_two_points(self, transformed_table, current_flow_rate):
+
+        parallel_resistances = []
+        for i in range(len(transformed_table)):
+            cur_element = transformed_table[i]
+            if isinstance(cur_element[0], tuple):
+                if not cur_element[1].tile_type in Constants.DIVISION_TYPES:
+                    cur_element[1].generated_flow_rate_in_this_cell = current_flow_rate
+            else:
+                parallel_resistances.append(self.find_resistance_between_two_points(cur_element))
+
+        total_res_in_parallels = sum(parallel_resistances)
+
+        current_parallel_branch = 0
+        for i in range(len(transformed_table)):
+            cur_element = transformed_table[i]
+            if not isinstance(cur_element[0], tuple):
+                going_flow_rate = current_flow_rate * ((total_res_in_parallels - parallel_resistances[
+                    current_parallel_branch]) / total_res_in_parallels)
+                self.set_generated_flow_rates_between_two_points(cur_element, going_flow_rate)
+                current_parallel_branch += 1
+
+    @staticmethod
+    def find_entry_flow_rate(transformed_table, total_resistance):
+
+        entry_pressure = transformed_table[0][1].pressure_in_this_cell
+
+        entry_flow_rate = entry_pressure / total_resistance
+
+        return entry_flow_rate
+
     def set_generated_flow_rates(self, transformed_table):
-        print("here")
-        pass
+        for transformed_table_circuit in transformed_table:
+            total_resistance_in_current_circuit = self.find_resistance_between_two_points(transformed_table_circuit)
+            entry_flow_rate_in_current_circuit = self.find_entry_flow_rate(transformed_table_circuit,
+                                                                           total_resistance_in_current_circuit)
+            self.set_generated_flow_rates_between_two_points(transformed_table_circuit,
+                                                             entry_flow_rate_in_current_circuit)
+            print(f"Total resistance in current circuit: {total_resistance_in_current_circuit}")
+            print(f"Entry flow rate in current circuit: {entry_flow_rate_in_current_circuit}")
+            print()
 
     @staticmethod
     def get_next_tile_coordinates(cur_x: int, cur_y: int, direction: str) -> tuple[int, int]:

@@ -345,7 +345,8 @@ class Main_Section:
                                                              height=pipe_height,
                                                              fillet_radius=pipe_fillet_radius,
                                                              step_size_factor=cell_step_size_factor,
-                                                             side_length=cell_side_length)
+                                                             side_length=cell_side_length,
+                                                             time_limit=30)
 
             all_cell_locs_and_types = self.resistance_dict[key]
             for cell_loc_type in all_cell_locs_and_types:
@@ -372,6 +373,7 @@ class Main_Section:
                 popup.update()
 
         self.table_obj.set_generated_flow_rates(self.transformed_table)
+        self.table_obj.format_lines(self.transformed_table)
 
         # when all the mazes are generated close this popup, and show new popup with all_cells_locs_and_types
         if popup is not None:

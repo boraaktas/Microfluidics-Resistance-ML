@@ -171,12 +171,15 @@ class CircuitPopup:
                                                                                  sticky="w", padx=10)
                 row_index += 1
 
-                # Display Desired Q and Generated Q side by side
-                ttk.Label(scrollable_panel_frame, text=f"Desired Q: {desired_flow_rate}").grid(row=row_index, column=0,
-                                                                                               sticky="w", padx=10)
-                ttk.Label(scrollable_panel_frame, text=f"Generated Q: {generated_flow_rate}").grid(row=row_index,
-                                                                                                   column=1, sticky="w",
+                # Display Desired Q and Generated Q side by side with 2 decimal points
+                ttk.Label(scrollable_panel_frame, text=f"Desired Q: {desired_flow_rate:.2f}").grid(row=row_index,
+                                                                                                   column=0,
+                                                                                                   sticky="w",
                                                                                                    padx=10)
+                ttk.Label(scrollable_panel_frame, text=f"Generated Q: {generated_flow_rate:.2f}").grid(row=row_index,
+                                                                                                       column=1,
+                                                                                                       sticky="w",
+                                                                                                       padx=10)
                 row_index += 1
 
                 ttk.Separator(scrollable_panel_frame, orient='horizontal').grid(row=row_index, column=0, columnspan=2,
