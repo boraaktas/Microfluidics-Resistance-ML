@@ -47,6 +47,8 @@ def generate_desired_maze():
     TARGET_LOC_MODE = "east"  # east or north
     METHOD = None  # TS or SA or None
 
+    TIME_LIMIT = 30
+
     generative_model = GenerativeModel(prediction_model=prediction_model,
                                        desired_resistance=DESIRED_RESISTANCE,
                                        step_size_factor=STEP_SIZE_FACTOR,
@@ -55,7 +57,8 @@ def generate_desired_maze():
                                        fillet_radius=FILLET_RADIUS,
                                        target_loc_mode=TARGET_LOC_MODE,
                                        method=METHOD,
-                                       side_length=SIDE_LENGTH)
+                                       side_length=SIDE_LENGTH,
+                                       time_limit=TIME_LIMIT)
 
     MAZE, FITNESS = generative_model.generate_maze()
     GenerativeModel.pretty_print_maze(MAZE)
@@ -64,7 +67,11 @@ def generate_desired_maze():
     print(f"Desired resistance: {DESIRED_RESISTANCE}")
     print(f"The resistance of the maze is: {generative_model.predict_resistance(maze=MAZE)}, with fitness: {FITNESS}")
 
-    build_3d_cell_maze(maze=MAZE, step_size_factor=STEP_SIZE_FACTOR, width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
+    build_3d_cell_maze(maze=MAZE,
+                       step_size_factor=STEP_SIZE_FACTOR,
+                       width=WIDTH,
+                       height=HEIGHT,
+                       fillet_radius=FILLET_RADIUS)
 
 
 if __name__ == '__main__':

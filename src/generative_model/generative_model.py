@@ -23,7 +23,8 @@ class GenerativeModel:
                  fillet_radius: float,
                  target_loc_mode: str,
                  method: Optional[str],
-                 side_length: float
+                 side_length: float,
+                 time_limit: float
                  ):
         self.PREDICTION_MODEL = prediction_model
         self.desired_resistance = desired_resistance
@@ -34,6 +35,7 @@ class GenerativeModel:
         self.target_loc_mode = target_loc_mode
         self.method = method
         self.side_length = side_length
+        self.time_limit = time_limit
 
     def generate_maze(self) -> np.ndarray:
 
@@ -43,14 +45,14 @@ class GenerativeModel:
                           objective_method=self.fitness_function,
                           tabu_size=10,
                           num_neighbors=50,
-                          time_limit=100,
+                          time_limit=self.time_limit,
                           print_iteration=True)
 
         elif self.method == "SA":
             solution = SA(init_method=self.initialization,
                           N_List=[self.N1, self.N2, self.N3],
                           objective_method=self.fitness_function,
-                          time_limit=100,
+                          time_limit=self.time_limit,
                           print_iteration=True)
 
         elif self.method is None:
@@ -76,7 +78,7 @@ class GenerativeModel:
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="random")
+                                            path_finding_mode=path_finding_mode)
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness
