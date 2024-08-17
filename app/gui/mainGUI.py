@@ -139,7 +139,7 @@ class Main_Section:
         self.entries = []  # Clear previous entries
 
         for entry_pressure in entry_pressures:
-            label = ttk.Label(scrollable_frame, text=f"Entry Pressure ({entry_pressure[0][0] + 1},"
+            label = ttk.Label(scrollable_frame, text=f"Entry Pressure (mbar) ({entry_pressure[0][0] + 1},"
                                                      f" {entry_pressure[0][1] + 1}):", anchor="center")
             label.grid(row=row, column=0, padx=10, pady=5)
             entry = ttk.Entry(scrollable_frame, width=5)
@@ -147,8 +147,10 @@ class Main_Section:
             self.entries.append(((entry_pressure[0][0], entry_pressure[0][1]), entry))
             row += 1
 
-        for flow_rate_calculator in flow_rate_calculators:
-            label = ttk.Label(scrollable_frame, text=f"Desired Flow Rate ({flow_rate_calculator[0][0] + 1},"
+        for flow_rate_calculator in flow_rate_calculators + exit_pressures:
+            mu_symbol = u"\u03bc"
+            label = ttk.Label(scrollable_frame, text=f"Desired Flow Rate ({mu_symbol}L)"
+                                                     f" ({flow_rate_calculator[0][0] + 1},"
                                                      f" {flow_rate_calculator[0][1] + 1}):", anchor="center")
             label.grid(row=row, column=0, padx=10, pady=5)
             entry = ttk.Entry(scrollable_frame, width=5)
@@ -180,13 +182,11 @@ class Main_Section:
                 inputs[position] = {"P": value, "I": None}
             elif type_in_position in Constants.Q_TILES:
                 inputs[position] = {"P": None, "I": value}
+            elif type_in_position in Constants.END_TYPES:
+                inputs[position] = {"P": 0, "I": value}
             else:
                 self.table_obj.make_all_tiles_attributes_none()
                 raise ValueError("Invalid tile type.")
-
-        exit_pressures = self.table_obj.find_exit_pressures()
-        for i in range(len(exit_pressures)):
-            inputs[exit_pressures[i][0]] = {"P": 0, "I": None}
 
         print(inputs)
 
