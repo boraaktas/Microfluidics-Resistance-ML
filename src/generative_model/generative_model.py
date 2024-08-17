@@ -198,7 +198,6 @@ class GenerativeModel:
             raise ValueError("destruct_mode should be either 'target' or 'beginning'")
 
         maze = copy.deepcopy(maze_and_fitness[0])
-        fitness = maze_and_fitness[1]
 
         LOCATIONS_IN_MAZE = get_coord_list_matrix(maze)
         len_maze = len(LOCATIONS_IN_MAZE)
@@ -242,7 +241,7 @@ class GenerativeModel:
         LOCATIONS_IN_MAZE = get_coord_list_matrix(maze)
         len_maze = len(LOCATIONS_IN_MAZE)
 
-        """max_cells_to_delete = int(len_maze // 2)
+        max_cells_to_delete = int(len_maze // 2)
         if fitness < 2:
             max_cells_to_delete = int(len_maze // 3)
         elif fitness < 1.5:
@@ -250,14 +249,15 @@ class GenerativeModel:
         elif fitness < 1:
             max_cells_to_delete = int(len_maze // 5)
         elif fitness < 0.5:
-            max_cells_to_delete = int(len_maze // 10)"""
+            max_cells_to_delete = int(len_maze // 10)
 
         # randomly select two locations and delete the path between them
         RANDOM_INDEX_1 = GenerativeModel.choose_random_index(maze, selection_mode=selection_mode)
         # RANDOM_INDEX_2 can be greater than RANDOM_INDEX_1 by maximum max_cells_to_delete
         RANDOM_INDEX_2 = GenerativeModel.choose_random_index(maze,
                                                              selection_mode=selection_mode,
-                                                             other_chosen_index=RANDOM_INDEX_1)
+                                                             other_chosen_index=RANDOM_INDEX_1,
+                                                             max_distance_between_indices=max_cells_to_delete)
 
         # ----------- DESTRUCT THE MAZE -----------
         (DELETED_MAZE,
@@ -282,7 +282,7 @@ class GenerativeModel:
     def choose_random_index(maze: np.ndarray,
                             selection_mode: str,
                             other_chosen_index: int = None,
-                            max_distance_between_indices: int = 50,
+                            max_distance_between_indices: int = 30,
                             ) -> int:
 
         LOCATIONS_IN_MAZE = get_coord_list_matrix(maze)

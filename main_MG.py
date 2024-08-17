@@ -65,7 +65,7 @@ def generate_desired_maze():
                                        side_length=SIDE_LENGTH,
                                        time_limit=TIME_LIMIT,
                                        plot_bool=True,
-                                       print_iteration=True)
+                                       print_iteration=False)
 
     MAZE, FITNESS = generative_model.generate_maze()
     GenerativeModel.pretty_print_maze(MAZE)
