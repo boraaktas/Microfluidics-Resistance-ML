@@ -45,8 +45,8 @@ class Main_Section:
         self.transformed_table = None
         self.resistance_dict = None
 
-        Menu_Section(self)
-        Table_Section(self)
+        self.menu_section = Menu_Section(self)
+        self.table_section = Table_Section(self)
 
     def show_error_popup(self, message):
         popup = tk.Toplevel()

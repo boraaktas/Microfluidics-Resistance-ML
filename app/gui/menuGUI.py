@@ -155,6 +155,16 @@ class Menu_Section:
         try:
             self.main_gui.transformed_table = self.table_obj.transform_table()
 
+            # make all other tiles EMPTY if it is not in transform_table
+            flat_transformed_table = self.table_obj.flat_nested_list(self.main_gui.transformed_table)
+            locs_in_transformed_table = [elem[0] for elem in flat_transformed_table]
+
+            # iterate over the table_obj
+            for i in range(self.table_obj.table_x):
+                for j in range(self.table_obj.table_y):
+                    if (i, j) not in locs_in_transformed_table:
+                        self.main_gui.table_section.remove_tile(i, j)
+
             # open a popup window to enter the circuit details
             self.main_gui.open_build_popup()
 
