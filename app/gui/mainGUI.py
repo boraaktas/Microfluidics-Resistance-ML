@@ -295,7 +295,8 @@ class Main_Section:
         progress_bar = ttk.Progressbar(popup, maximum=total_cell_count, variable=generated_cell_count, length=300)
         progress_bar.pack(pady=10)
 
-        RG = ResistanceGenerator(self.prediction_model)
+        RG = ResistanceGenerator(self.prediction_model,
+                                 self.res_bounds)
 
         ALL_GENERATED_COMPONENTS: dict[tuple[int, int], tuple[np.ndarray, plt.Figure,
                                                               float, float, float, TileType, str]] = {}

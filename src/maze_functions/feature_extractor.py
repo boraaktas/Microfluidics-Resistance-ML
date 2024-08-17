@@ -76,6 +76,27 @@ def get_no_corners(maze_coords: List[List[int]]) -> int:
     return no_corners
 
 
+def get_coord_corners_list(maze_coords: List[List[int]]) -> List[List[int]]:
+    """
+    This function calculates the coordinates of the corners in the path of the maze.
+
+    :param maze_coords: A list of coordinates of the path.
+    :return: A list of coordinates of the corners in the path of the maze.
+    """
+    corners_coord = []
+
+    for i in range(1, len(maze_coords) - 1):
+        x1, y1, v1 = maze_coords[i - 1]
+        x2, y2, v2 = maze_coords[i]
+        x3, y3, v3 = maze_coords[i + 1]
+        if x1 != x3 and y1 != y3:
+            corners_coord.append([x2, y2, v2])
+        else:
+            corners_coord.append([-1, -1, -1])
+
+    return corners_coord
+
+
 def extract_features(maze: np.ndarray,
                      step_size_factor: float,
                      width: float,

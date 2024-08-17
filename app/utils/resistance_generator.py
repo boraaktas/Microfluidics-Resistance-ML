@@ -9,12 +9,14 @@ from .tile_type import TileType
 class ResistanceGenerator:
 
     def __init__(self: 'ResistanceGenerator',
-                 prediction_model: PredictionModel):
+                 prediction_model: PredictionModel,
+                 resistance_bounds_dict: dict):
         """
         Initializes the ResistanceGenerator object.
         """
 
         self.prediction_model = prediction_model
+        self.resistance_bounds_dict = resistance_bounds_dict
 
     def generate_resistance(self: 'ResistanceGenerator',
                             desired_resistance: float,
@@ -43,6 +45,7 @@ class ResistanceGenerator:
         """
 
         generative_model = GenerativeModel(prediction_model=self.prediction_model,
+                                           resistance_bounds_dict=self.resistance_bounds_dict,
                                            desired_resistance=desired_resistance,
                                            step_size_factor=step_size_factor,
                                            width=width,

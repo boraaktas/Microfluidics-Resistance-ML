@@ -1,3 +1,5 @@
+import pickle
+
 from src.generative_model import GenerativeModel
 from src.machine_learning import PredictionModel
 from src.maze_functions import (random_maze_generator,
@@ -35,21 +37,24 @@ def random_maze():
 def generate_desired_maze():
     prediction_model = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
                                        meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
+    with open('data/resistance_bounds.pkl', 'rb') as f:
+        resistance_bounds = pickle.load(f)
 
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
 
-    DESIRED_RESISTANCE = 40
+    DESIRED_RESISTANCE = 100
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
 
     TARGET_LOC_MODE = "east"  # east or north
-    METHOD = None  # TS or SA or None
+    METHOD = "SA"  # TS or SA or None
 
-    TIME_LIMIT = 30
+    TIME_LIMIT = 60
 
     generative_model = GenerativeModel(prediction_model=prediction_model,
+                                       resistance_bounds_dict=resistance_bounds,
                                        desired_resistance=DESIRED_RESISTANCE,
                                        step_size_factor=STEP_SIZE_FACTOR,
                                        width=WIDTH,
@@ -58,7 +63,9 @@ def generate_desired_maze():
                                        target_loc_mode=TARGET_LOC_MODE,
                                        method=METHOD,
                                        side_length=SIDE_LENGTH,
-                                       time_limit=TIME_LIMIT)
+                                       time_limit=TIME_LIMIT,
+                                       plot_bool=True,
+                                       print_iteration=True)
 
     MAZE, FITNESS = generative_model.generate_maze()
     GenerativeModel.pretty_print_maze(MAZE)
@@ -75,5 +82,5 @@ def generate_desired_maze():
 
 
 if __name__ == '__main__':
-    random_maze()
-    # generate_desired_maze()
+    # random_maze()
+    generate_desired_maze()
