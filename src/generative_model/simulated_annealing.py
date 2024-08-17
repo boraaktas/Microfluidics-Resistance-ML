@@ -26,6 +26,7 @@ def SA(init_method: Callable,
        print_iteration: bool = False,
        print_results: bool = False,
        plot_results: bool = False,
+       plot_best_solution: bool = False,
        save_results: bool = False,
        save_results_path: str = '',
        save_results_file_name: str = '') -> list:
@@ -156,7 +157,9 @@ def SA(init_method: Callable,
                 best_iter = iteration  # update the best iteration
 
                 T_b = T  # update the best temperature
-                plot_maze(S_best[0])
+
+                if plot_best_solution:
+                    plot_maze(S_best[0])
 
             # Update the gap between the current solution found so far and the benchmark cost
             gap = abs(cost_current - benchmark_cost) / benchmark_cost if benchmark_cost != 0 else math.inf

@@ -26,6 +26,7 @@ def TS(init_method: Callable,
        print_iteration: bool = False,
        print_results: bool = False,
        plot_results: bool = False,
+       plot_best_solution: bool = False,
        save_results: bool = False,
        save_results_path: str = '',
        save_results_file_name: str = ''):
@@ -198,8 +199,7 @@ def TS(init_method: Callable,
         cost_current = best_neighbor_cost
 
         # Update the gap between the current solution found so far and the benchmark cost
-        gap = abs(cost_current - benchmark_cost) / \
-              benchmark_cost if benchmark_cost != 0 else math.inf
+        gap = abs(cost_current - benchmark_cost) / benchmark_cost if benchmark_cost != 0 else math.inf
         if gap <= threshold_gap and threshold_gap_time is None and threshold_gap_iter is None:
             threshold_gap_time = time.time() - start_time
             threshold_gap_iter = iteration
@@ -228,7 +228,9 @@ def TS(init_method: Callable,
 
             # track the number of times each neighbor function improved the best solution
             N_func_improves[best_neighbor_move_func_index] += 1
-            plot_maze(S_best[0])
+
+            if plot_best_solution:
+                plot_maze(S_best[0])
 
         if print_iteration:
             # print the current iteration information""
@@ -245,8 +247,7 @@ def TS(init_method: Callable,
             print("\nBest solution: ", S_best)
             print("Best cost: ", cost_best)
             print("Best Feasibility: ", feasibility_best)
-            print("Best gap: ", abs(cost_best - benchmark_cost) /
-                                benchmark_cost if benchmark_cost != 0 else math.inf)
+            print("Best gap: ", abs(cost_best - benchmark_cost) / benchmark_cost if benchmark_cost != 0 else math.inf)
             print("Best time: ", best_time)
             print("Best iteration: ", best_iter)
             print("--------------------------------------------------\n")
