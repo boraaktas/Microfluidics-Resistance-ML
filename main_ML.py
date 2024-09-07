@@ -3,9 +3,7 @@ import pandas as pd
 from src.machine_learning import read_data, preprocess, train_test_split, train, test
 
 if __name__ == '__main__':
-    SIMULATION_RESULTS_CSVS_PATH: list[str] = ['drive_data/datasets/simulations/Simulation_Lib_5.csv',
-                                               'drive_data/datasets/simulations/Simulation_Lib_6.csv',
-                                               'drive_data/datasets/simulations/longest_shortest_simulations.csv']
+    SIMULATION_RESULTS_CSVS_PATH: list[str] = ['drive_data/datasets/simulations/new_sim_library.csv']
 
     ALL_DATA: pd.DataFrame = read_data(SIMULATION_RESULTS_CSVS_PATH)
     LEN_DATA = len(ALL_DATA)
@@ -17,7 +15,8 @@ if __name__ == '__main__':
                                       'Pressure_Difference',
                                       'Flow_Rate',
                                       'Step_Size',
-                                      'Side_Length'])
+                                      'Side_Length',
+                                      'Outlet_Position'])
     # -----------------------------------------------------------------------------------------
 
     FEATURE_COLUMN_NAMES = ALL_DATA.columns[2:-1]

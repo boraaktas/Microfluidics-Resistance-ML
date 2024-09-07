@@ -44,15 +44,15 @@ def generate_desired_maze():
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
 
-    DESIRED_RESISTANCE = 100
+    DESIRED_RESISTANCE = 80
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
 
     TARGET_LOC_MODE = "east"  # east or north
-    METHOD = "SA"  # TS or SA or None
+    METHOD = "TS"  # TS or SA or None
 
-    TIME_LIMIT = 60
+    TIME_LIMIT = 30
 
     generative_model = GenerativeModel(prediction_model=prediction_model,
                                        resistance_bounds_dict=resistance_bounds,
