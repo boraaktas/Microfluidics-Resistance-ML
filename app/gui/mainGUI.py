@@ -234,7 +234,7 @@ class Main_Section:
                         coords = value[0]
                         self.table_obj.table[coords[0]][coords[1]].resistance_in_this_cell = key_resistance
 
-                # put resistance values to divisons
+                # put resistance values to divisions
                 divisions = self.table_obj.find_divisions()
                 for division in divisions:
                     division_tile_loc = division[0]

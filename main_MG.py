@@ -14,7 +14,7 @@ def random_maze():
     SIDE_LENGTH = 20
     TARGET_LOC_MODE = "east"  # east or north
     WIDTH, HEIGHT, FILLET_RADIUS = 0.10, 0.10, 0.10
-    PATH_FINDING_MODE = "random"
+    PATH_FINDING_MODE = "random"  # random, shortest or longest
 
     MAZE = random_maze_generator(SIDE_LENGTH, TARGET_LOC_MODE, PATH_FINDING_MODE)
     plot_maze(MAZE, print_maze=True)
