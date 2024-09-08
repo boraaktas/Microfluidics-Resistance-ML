@@ -303,11 +303,10 @@ class GenerativeModel:
                     else:
                         locations_in_maze_weights.append(1)
 
-            locations_in_maze_weights = GenerativeModel.normalize_weights(locations_in_maze_weights)
-
             if sum(locations_in_maze_weights) == 0:
                 random_index = np.random.choice(range(1, len(LOCATIONS_IN_MAZE) - 1))
             else:
+                locations_in_maze_weights = GenerativeModel.normalize_weights(locations_in_maze_weights)
                 random_index = np.random.choice(range(1, len(LOCATIONS_IN_MAZE) - 1), p=locations_in_maze_weights)
 
         elif selection_mode == "from_corners":
@@ -328,11 +327,10 @@ class GenerativeModel:
                 else:
                     locations_in_maze_weights.append(0)
 
-            locations_in_maze_weights = GenerativeModel.normalize_weights(locations_in_maze_weights)
-
             if sum(locations_in_maze_weights) == 0:
                 random_index = np.random.choice([1, len(LOCATIONS_IN_MAZE) - 1])
             else:
+                locations_in_maze_weights = GenerativeModel.normalize_weights(locations_in_maze_weights)
                 random_index = np.random.choice(range(1, len(LOCATIONS_IN_MAZE) - 1), p=locations_in_maze_weights)
 
         else:
