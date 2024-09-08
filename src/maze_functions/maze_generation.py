@@ -5,11 +5,51 @@ import numpy as np
 from src.maze_functions import get_coord_list_matrix
 
 
+def euclidean_distance(coords1: Tuple[int, int], coords2: Tuple[int, int]) -> float:
+    """Calculate the Euclidean distance between two points."""
+    return round((coords1[0] - coords2[0]) ** 2 + (coords1[1] - coords2[1]) ** 2, 2)
+
+
+def manhattan_distance(coords1: Tuple[int, int], coords2: Tuple[int, int]) -> float:
+    """Calculate the Manhattan distance between two points."""
+    return abs(coords1[0] - coords2[0]) + abs(coords1[1] - coords2[1])
+
+
+def manhattan_euclidean_sum(coords1: Tuple[int, int], coords2: Tuple[int, int]) -> float:
+    """Calculate the ratio of the Manhattan distance to the Euclidean distance between two points."""
+    manhattan_dist = manhattan_distance(coords1, coords2)
+    euclidean_dist = euclidean_distance(coords1, coords2)
+    return manhattan_dist + euclidean_dist
+
+
 def is_valid_move(x: int, y: int, visited, maze, target_coords):
     """Check if the move is valid (within bounds and not a wall)."""
     is_available = (x, y) not in visited and maze[x, y].item() == 0
     is_target = (x, y) == target_coords
     return is_available or is_target
+
+
+def corner_move_or_not(old_coords: Tuple[int, int],
+                       current_coords: Tuple[int, int],
+                       next_coords: Tuple[int, int]) -> bool:
+    """Check if the move is a corner move."""
+    if old_coords == current_coords:
+        return False
+
+    diff_x_between_current_and_old = current_coords[0] - old_coords[0]
+    diff_y_between_current_and_old = current_coords[1] - old_coords[1]
+
+    diff_x_between_next_and_current = next_coords[0] - current_coords[0]
+    diff_y_between_next_and_current = next_coords[1] - current_coords[1]
+
+    # if difference between the current and old coordinates is the same as the difference between the next and current
+    # it means that the move is not a corner move
+    if diff_x_between_current_and_old == diff_x_between_next_and_current and \
+            diff_y_between_current_and_old == diff_y_between_next_and_current:
+        return False
+
+    # if the move is a corner move
+    return True
 
 
 def search_path(x: int, y: int, visited: List[Tuple[int, int]],
@@ -76,6 +116,7 @@ def complete_maze(maze: np.ndarray,
 
     reached_target = False
     current_num = start_coords[2]
+    old_coords = (start_coords[0], start_coords[1])
     current_coords = (start_coords[0], start_coords[1])
     maze[current_coords] = current_num
 
@@ -96,29 +137,50 @@ def complete_maze(maze: np.ndarray,
             break
 
         corrected_neighbors_probs = []
+        corrected_neighbours_corner = []
         total_dist = 0
         for nx, ny in corrected_neighbours:
-            current_dist = (nx - target_coords[0]) ** 2 + (ny - target_coords[1]) ** 2
+
+            # TODO: bu şekilde daha iyi sonuç veriyor neden tam emin olamadım ama sonra konuşulur,
+            # böyle kalsa sorun olmaz
+            if path_finding_mode == "shortest":
+                current_dist = manhattan_distance((nx, ny), target_coords)
+            elif path_finding_mode == "longest":
+                current_dist = euclidean_distance((nx, ny), target_coords)
+            else:
+                current_dist = manhattan_euclidean_sum((nx, ny), target_coords)
+
             corrected_neighbors_probs.append(current_dist)
+            corrected_neighbours_corner.append(1 if corner_move_or_not(old_coords, current_coords, (nx, ny))
+                                               else 0)
             total_dist += current_dist
 
         # normalize the probabilities
         corrected_neighbors_probs = [x / total_dist for x in corrected_neighbors_probs] if total_dist > 0 else [1]
 
-        # choose the minimum probability
-        sorted_probs = np.sort(corrected_neighbors_probs)
-
         if path_finding_mode == "shortest":
-            chosen_prob = sorted_probs[0]
+            sorted_neighbors_probs = sorted(zip(corrected_neighbours,
+                                                corrected_neighbors_probs,
+                                                corrected_neighbours_corner),
+                                            key=lambda x: (x[1], x[2]))
+            chosen_prob_index = 0
         elif path_finding_mode == "longest":
-            chosen_prob = sorted_probs[-1]
+            sorted_neighbors_probs = sorted(zip(corrected_neighbours,
+                                                corrected_neighbors_probs,
+                                                corrected_neighbours_corner),
+                                            key=lambda x: (x[1], 1 - x[2]))
+            chosen_prob_index = -1
         else:
-            chosen_prob = np.random.choice(sorted_probs)
+            sorted_neighbors_probs = list(zip(corrected_neighbours,
+                                              corrected_neighbors_probs,
+                                              corrected_neighbours_corner))
+            chosen_prob_index = np.random.choice(len(sorted_neighbors_probs))
 
-        next_coords = corrected_neighbours[corrected_neighbors_probs.index(chosen_prob)]
+        next_coords = sorted_neighbors_probs[chosen_prob_index][0]
 
         maze[next_coords] = current_num + 1
         current_num += 1
+        old_coords = current_coords
         current_coords = next_coords
 
         if next_coords == target_coords:
