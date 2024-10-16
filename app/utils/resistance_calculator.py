@@ -1,3 +1,5 @@
+import pickle
+
 import pyomo.environ as pyo
 from pyomo.environ import ConcreteModel, Var, Objective, SolverFactory, Constraint, RangeSet, minimize, value
 
@@ -296,7 +298,12 @@ def calculate_resistance_via_optimization(circuit,
                                           resistance_bounds,
                                           obj_type="farthest_to_lb",
                                           start_num=None,
-                                          end_num=None):
+                                          end_num=None) -> dict[tuple[str, int], float]:
+
+    # save all parameters to a pickle file
+    with open("dumb/circuit.pkl", "wb") as asda:
+        pickle.dump(circuit, asda)
+
     A, b, x, RLS_and_RCS_COUNT = create_matrix(circuit)
 
     flatten_cir = flatten_circuit(circuit)
@@ -319,7 +326,7 @@ def calculate_resistance_via_optimization(circuit,
 
     if obj_type not in ["diff_min_max", "farthest_to_avg", "farthest_to_lb", "farthest_to_ub"]:
         raise ValueError("obj_type should be one of the following: diff_min_max, farthest_to_avg, "
-                         "farthest_to_avg_lb, farthest_to_avg_ub")
+                         "farthest_to_lb, farthest_to_ub")
 
     farthest_type = None
     if obj_type.startswith("farthest"):
@@ -408,7 +415,7 @@ def calculate_resistance_via_optimization(circuit,
             for r_index in R_indices:
                 if not found:
                     if A_row[r_index] != 0 and A_row[r_index] != 1:
-                        right_hand_side = -1 * resistance_bounds[j]['div_res'] * A_row[r_index]
+                        right_hand_side = -2 * resistance_bounds[j]['div_res'] * A_row[r_index]
                         found = True
 
             model.add_component(f"A_constraint_{i}_{j}",
@@ -590,7 +597,7 @@ def calculate_resistance(circuit, resistance_bounds: dict):
     circuit_results = {}
     for single_circuit in circuit:
         mf_circuit_results_opt_with_obj = calculate_resistance_via_optimization(
-            circuit=single_circuit, resistance_bounds=resistance_bounds, start_num=0, end_num=1)
+            circuit=single_circuit, resistance_bounds=resistance_bounds)
         circuit_results.update(mf_circuit_results_opt_with_obj)
 
     results_dict = {}

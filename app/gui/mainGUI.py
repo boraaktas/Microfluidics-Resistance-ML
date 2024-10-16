@@ -234,18 +234,21 @@ class Main_Section:
                         coords = value[0]
                         self.table_obj.table[coords[0]][coords[1]].resistance_in_this_cell = key_resistance
 
-                # put resistance values to divisions
+                # put resistance values to divisions, exits and entry pressures
+                exit_pressures = self.table_obj.find_exit_pressures()
+                entry_pressures = self.table_obj.find_entry_pressures()
                 divisions = self.table_obj.find_divisions()
-                for division in divisions:
-                    division_tile_loc = division[0]
-                    selected_comb_for_div = (
-                        self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].selected_comb_for_tile)
+                all_P_nodes = exit_pressures + entry_pressures + divisions
+                for P_node in all_P_nodes:
+                    node_tile_loc = P_node[0]
+                    selected_comb_for_node = (
+                        self.table_obj.table[node_tile_loc[0]][node_tile_loc[1]].selected_comb_for_tile)
 
-                    div_res_for_comb = self.res_bounds[selected_comb_for_div]['div_res']
+                    div_res_for_comb = self.res_bounds[selected_comb_for_node]['div_res']
 
-                    self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].resistance_in_this_cell \
+                    self.table_obj.table[node_tile_loc[0]][node_tile_loc[1]].resistance_in_this_cell \
                         = div_res_for_comb
-                    self.table_obj.table[division_tile_loc[0]][division_tile_loc[1]].generated_resistance_in_this_cell \
+                    self.table_obj.table[node_tile_loc[0]][node_tile_loc[1]].generated_resistance_in_this_cell \
                         = div_res_for_comb
 
                 success_resistances = True
@@ -347,7 +350,7 @@ class Main_Section:
                                                              fillet_radius=pipe_fillet_radius,
                                                              step_size_factor=cell_step_size_factor,
                                                              side_length=cell_side_length,
-                                                             time_limit=30)
+                                                             time_limit=60)
 
             all_cell_locs_and_types = self.resistance_dict[key]
             for cell_loc_type in all_cell_locs_and_types:
@@ -373,8 +376,8 @@ class Main_Section:
                 generated_cell_count.set(generated_cell_count.get() + 1)
                 popup.update()
 
-        self.table_obj.set_generated_flow_rates(self.transformed_table)
-        self.table_obj.format_lines(self.transformed_table)
+        self.table_obj.set_generated_flow_rates(self.transformed_table, self.res_bounds)
+        print(self.table_obj.format_lines(self.transformed_table))
 
         # when all the mazes are generated close this popup, and show new popup with all_cells_locs_and_types
         if popup is not None:
