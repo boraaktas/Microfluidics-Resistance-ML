@@ -300,7 +300,8 @@ def calculate_resistance_via_optimization(circuit,
     A, b, x, RLS_and_RCS_COUNT = create_matrix(circuit)
 
     flatten_cir = flatten_circuit(circuit)
-
+    print("Flatten Circuit:")
+    print(flatten_cir)
     R_div_counts = {}
     for var in x:
         if var[0] == 'R' and var not in RLS_and_RCS_COUNT:

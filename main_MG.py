@@ -44,12 +44,12 @@ def generate_desired_maze():
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
 
-    DESIRED_RESISTANCE = 80
+    DESIRED_RESISTANCE = 30
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
 
-    TARGET_LOC_MODE = "east"  # east or north
+    TARGET_LOC_MODE = "north"  # east or north
     METHOD = "TS"  # TS or SA or None
 
     TIME_LIMIT = 30
