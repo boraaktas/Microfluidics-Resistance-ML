@@ -300,10 +300,6 @@ def calculate_resistance_via_optimization(circuit,
                                           start_num=None,
                                           end_num=None) -> dict[tuple[str, int], float]:
 
-    # save all parameters to a pickle file
-    with open("dumb/circuit.pkl", "wb") as asda:
-        pickle.dump(circuit, asda)
-
     A, b, x, RLS_and_RCS_COUNT = create_matrix(circuit)
 
     flatten_cir = flatten_circuit(circuit)
