@@ -303,8 +303,22 @@ def import_stl(cell_type_str: str,
 
     # Return the position before the rotation
     mesh_centroid = mesh.centroid
-    mesh_rotated_centroid = mesh_rotated.centroid
+
+    if file_cell_type_str == "START_END":
+        mesh_rotated_centroid = mesh.centroid
+    else:
+        mesh_rotated_centroid = mesh_rotated.centroid
     mesh_rotated.apply_translation(mesh_centroid - mesh_rotated_centroid)
+
+    if file_cell_type_str == "START_END":
+        if cell_direction_str == "NORTH":
+            mesh_rotated.apply_translation([0, 0, 10])
+        elif cell_direction_str == "SOUTH":
+            mesh_rotated.apply_translation([10, 0, 0])
+        elif cell_direction_str == "WEST":
+            mesh_rotated.apply_translation([10, 0, 10])
+        else:
+            pass
 
     return mesh_rotated
 
@@ -420,7 +434,7 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
     bottom.visual.face_colors = [255, 255, 255, 255]
     bottom.apply_translation([max_x * 5, max_y * 5, 0])
 
-    big_wall_height = 3.7
+    big_wall_height = 2.4
     big_wall_thickness = 1
     big_inside_wall = trimesh.creation.box(
         extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
@@ -441,8 +455,8 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
     biggest_bottom_box = trimesh.creation.box(
         extents=[(max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
                  (max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
-                 3])
-    biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.5])
+                 1.4])
+    biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.2])
     combined_model_with_base = trimesh.util.concatenate([combined_model_with_base, biggest_bottom_box])
 
     if show_model:
