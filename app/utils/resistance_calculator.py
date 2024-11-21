@@ -369,12 +369,12 @@ def calculate_resistance_via_optimization(circuit,
         # add max_resistance and min_resistance variables for each combination
         if obj_type == "diff_min_max":
             model.add_component(f"max_resistance_{j}",
-                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
+                                Var(domain=pyo.NonNegativeReals))
             model.add_component(f"min_resistance_{j}",
-                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
+                                Var(domain=pyo.NonNegativeReals))
         elif obj_type.startswith("farthest"):
             model.add_component(f"farthest_{j}",
-                                Var(domain=pyo.NonNegativeReals, bounds=(0, resistance_bounds[j]['ub'])))
+                                Var(domain=pyo.NonNegativeReals))
 
     if obj_type == "diff_min_max":
         model.add_component("max_resistance",
@@ -438,10 +438,10 @@ def calculate_resistance_via_optimization(circuit,
                                         Constraint(expr=getattr(model, f"{x[i]}_{j}") - getattr(
                                             model, f"farthest_{j}") <= resistance_bounds[j][farthest_type] * getattr(
                                             model, f"combination_{j}")))
-                    model.add_component(f"farthest_constraint_{i}_{j}_2",
+                    """model.add_component(f"farthest_constraint_{i}_{j}_2",
                                         Constraint(expr=getattr(model, f"{x[i]}_{j}") + getattr(
                                             model, f"farthest_{j}") >= resistance_bounds[j][farthest_type] * getattr(
-                                            model, f"combination_{j}")))
+                                            model, f"combination_{j}")))"""
 
         # max resistance should be maximum of all max_resistance variables
         if obj_type == "diff_min_max":
