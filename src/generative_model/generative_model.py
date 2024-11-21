@@ -61,11 +61,11 @@ class GenerativeModel:
             raise ValueError("The given width, height and fillet radius combination is not valid.")
 
         # check if the desired resistance is in the range
-        if not selected_group["lb"] <= self.desired_resistance <= selected_group["ub"]:
+        if not selected_group["lb"]*0.999 <= self.desired_resistance <= selected_group["ub"]*1.001:
             msg = (f"The desired resistance should be in the range of "
                    f"[{selected_group['lb']}, {selected_group['ub']}] for"
                    f" the given width ({self.width}), height ({self.height}) and"
-                   f" fillet radius ({self.fillet_radius}).")
+                   f" fillet radius ({self.fillet_radius}). The given desired resistance is {self.desired_resistance}.")
             raise ValueError(msg)
 
     def generate_maze(self) -> np.ndarray:
