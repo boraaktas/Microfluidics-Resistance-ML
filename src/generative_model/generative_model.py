@@ -123,7 +123,7 @@ class GenerativeModel:
 
     def fitness_function(self,
                          maze: np.ndarray) -> tuple[float, bool]:
-        resistance = self.predict_resistance(maze=maze)
+        resistance = np.expm1(self.predict_resistance(maze=maze))
 
         diff_res = self.desired_resistance - resistance
 
