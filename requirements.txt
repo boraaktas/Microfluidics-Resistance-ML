@@ -28,3 +28,4 @@ pillow==10.4.0
 cplex==22.1.1.2
 pyomo==6.7.3
 shapely==2.0.5
+plotly==5.24.1
