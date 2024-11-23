@@ -68,12 +68,13 @@ def generate_desired_maze():
                                        plot_bool=True,
                                        print_iteration=True)
 
-    MAZE, FITNESS = generative_model.generate_maze()
+    MAZE, ITERATION_COSTS = generative_model.generate_maze()
     pretty_print_maze(MAZE)
     plot_maze(MAZE)
 
     print(f"Desired resistance: {DESIRED_RESISTANCE}")
-    print(f"The resistance of the maze is: {generative_model.predict_resistance(maze=MAZE)}, with fitness: {FITNESS}")
+    print(f"The resistance of the maze is: {generative_model.predict_resistance(maze=MAZE)},"
+          f" with a cost of {ITERATION_COSTS[-1]}")
 
     build_3d_cell_maze(maze=MAZE,
                        step_size_factor=STEP_SIZE_FACTOR,

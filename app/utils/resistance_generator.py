@@ -56,7 +56,7 @@ class ResistanceGenerator:
                                            side_length=side_length,
                                            time_limit=time_limit)
 
-        cell_resistance_matrix, fitness = generative_model.generate_maze()
+        cell_resistance_matrix, _ = generative_model.generate_maze()
         cell_resistance_value = generative_model.predict_resistance(cell_resistance_matrix)
 
         return cell_resistance_matrix, cell_resistance_value

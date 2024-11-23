@@ -68,25 +68,17 @@ class GenerativeModel:
                    f" fillet radius ({self.fillet_radius}). The given desired resistance is {self.desired_resistance}.")
             raise ValueError(msg)
 
-    def generate_maze(self) -> np.ndarray:
-
+    def generate_maze(self):
+        costs = []
         if self.method == "TS":
-            solution = TS(init_method=self.initialization,
-                          N_List=[self.N1, self.N2],
-                          objective_method=self.fitness_function,
-                          tabu_size=10,
-                          num_neighbors=50,
-                          time_limit=self.time_limit,
-                          plot_best_solution=self.plot_bool,
-                          print_iteration=self.print_iteration)
-
-        elif self.method == "SA":
-            solution = SA(init_method=self.initialization,
-                          N_List=[self.N1, self.N2],
-                          objective_method=self.fitness_function,
-                          time_limit=self.time_limit,
-                          plot_best_solution=self.plot_bool,
-                          print_iteration=self.print_iteration)
+            solution, costs = TS(init_method=self.initialization,
+                                  N_List=[self.N1, self.N2],
+                                  objective_method=self.fitness_function,
+                                  tabu_size=10,
+                                  num_neighbors=50,
+                                  time_limit=self.time_limit,
+                                  plot_best_solution=self.plot_bool,
+                                  print_iteration=self.print_iteration)
 
         elif self.method is None:
             solution = self.initialization()
@@ -94,7 +86,9 @@ class GenerativeModel:
         else:
             raise ValueError("method should be either 'TS' or 'SA' or None")
 
-        return solution
+        maze, feasibility = solution
+
+        return maze, costs
 
     def initialization(self) -> tuple[np.ndarray, float]:
         """
@@ -104,7 +98,7 @@ class GenerativeModel:
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="random")
+                                            path_finding_mode="longest")
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness
@@ -131,7 +125,8 @@ class GenerativeModel:
         if diff_res < 0:
             diff_res *= 1.05
 
-        fitness = (abs(diff_res) / self.desired_resistance) * 100
+        # fitness = (abs(diff_res) / self.desired_resistance) * 100
+        fitness = abs(diff_res)
 
         return fitness, True
 

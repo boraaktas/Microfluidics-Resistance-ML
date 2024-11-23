@@ -343,7 +343,7 @@ def TS(init_method: Callable,
                             file_name=save_results_file_name)'''
         pass
 
-    return S_best
+    return S_best, solution_costs
 
 
 def check_parameters(N_List: list[Callable],
@@ -443,7 +443,7 @@ def check_termination_conditions(iteration: int,
     if gap <= threshold_gap:
         return True
 
-    if cost_best <= 0.5:
+    if cost_best <= 0.05:
         return True
 
     return False
