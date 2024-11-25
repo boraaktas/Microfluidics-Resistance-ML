@@ -98,7 +98,7 @@ class GenerativeModel:
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="longest")
+                                            path_finding_mode="random")
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness
@@ -125,8 +125,8 @@ class GenerativeModel:
         if diff_res < 0:
             diff_res *= 1.05
 
-        # fitness = (abs(diff_res) / self.desired_resistance) * 100
-        fitness = abs(diff_res)
+        fitness = (abs(diff_res) / self.desired_resistance) * 100
+        # fitness = abs(diff_res)
 
         return fitness, True
 

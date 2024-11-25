@@ -443,7 +443,7 @@ def check_termination_conditions(iteration: int,
     if gap <= threshold_gap:
         return True
 
-    if cost_best <= 0.05:
+    if cost_best <= 0.5:
         return True
 
     return False
