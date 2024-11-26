@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import numpy as np
 import pandas as pd
 
 
@@ -44,7 +45,7 @@ class PredictionModel:
         for column_name in self.base_learner_features:
             base_data_point_df[column_name] = [data_point_dict[column_name]]
 
-        prediction = float(chosen_base_learner.predict(base_data_point_df)[0])
+        prediction = float(np.expm1(chosen_base_learner.predict(base_data_point_df)[0]))
 
         return prediction
 
