@@ -82,7 +82,7 @@ class CircuitPopup:
 
         popup = tk.Toplevel()
         popup.title("Generated Circuit")
-        popup.resizable(False, False)
+        popup.resizable(True, True)
 
         # Make mainGUI unresponsive
         popup.grab_set()
@@ -91,13 +91,13 @@ class CircuitPopup:
 
         # Open in the center of the screen and make it on top of the mainGUI
         popup.update_idletasks()
-        popup_width = 1000  # Adjusted width for the panel
-        popup_height = 600
+        popup_width = int(self.root.winfo_screenwidth() * 0.9)
+        popup_height = int(self.root.winfo_screenheight() * 0.9)
 
         x_coordinate = int((self.root.winfo_x() + self.root.winfo_width() / 2) - (popup_width / 2))
         y_coordinate = int((self.root.winfo_y() + self.root.winfo_height() / 2) - (popup_height / 2))
 
-        popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_coordinate, y_coordinate))
+        popup.geometry(f"{popup_width}x{popup_height}+{x_coordinate}+{y_coordinate}")
 
         # Create a main frame to hold the scrollable content and the panel
         main_frame = ttk.Frame(popup)
@@ -133,7 +133,7 @@ class CircuitPopup:
             img_label.grid(row=cell_loc[0], column=cell_loc[1], padx=0, pady=0)
 
         # Create a panel frame to hold both the scrollable area and the button below it
-        panel_frame = ttk.Frame(main_frame, width=300)
+        panel_frame = ttk.Frame(main_frame, width=int(popup_width * 0.3))
         panel_frame.pack(side="right", fill="y")
 
         # Create a canvas for the scrollable part inside the panel
@@ -236,20 +236,12 @@ class CircuitPopup:
         scrollable_panel_frame.update_idletasks()
         panel_canvas.configure(scrollregion=panel_canvas.bbox("all"))
 
-        # Add one more button to download the 3D model after the show button
+        # Add buttons to the panel
         download_button = ttk.Button(panel_frame, text="Download 3D Model", command=self.download_3d_model)
-        download_button.pack(side="bottom", pady=10)
+        download_button.pack(side="bottom", pady=10, fill='x')
 
-        # Add a checkbox (Add Base) to show the 3D model with or without base change the base_checkbox_checked state
-        # currently it is set to False
         base_checkbox = ttk.Checkbutton(panel_frame, text="Add Base", variable=self.toggle_base_checkbox_var)
-        base_checkbox.pack(side="top", pady=10)
-
-        # Check the checkbox by default
-        self.toggle_base_checkbox_var.set(False)
-
-        # after click show button, update_idletasks
-        popup.update_idletasks()
+        base_checkbox.pack(side="bottom", pady=10)
 
     def download_3d_model(self):
         selected_model = self.model_3d_with_base if self.toggle_base_checkbox_var.get() else self.model_3d_without_base
