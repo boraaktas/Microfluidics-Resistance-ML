@@ -102,6 +102,8 @@ def build_3d_cell_maze(maze: np.ndarray,
     maze = np.array(maze)
     coords_list = get_coord_list_plot(maze)
 
+    # height = height * 1.2 # Increase the height of the maze for 3D printing
+
     # Multiply each coordinate by the step size factor
     scaled_coords = [(x * step_size_factor, y * step_size_factor, 0) for x, y, _ in coords_list]
 
@@ -236,6 +238,8 @@ def import_stl(cell_type_str: str,
 
     else:
         raise ValueError(f"Invalid cell type: {cell_type_str}")
+
+    # height = height / 1.2  # Return height to previous value
 
     width_height_str = f"w{int(width * 100)}_h{int(height * 100)}"
 
@@ -405,30 +409,33 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
     combined_model = combined_model.slice_plane(plane_origin, plane_normal)
 
     # Adding the Base Part
-    bottom_base = trimesh.creation.box(extents=[(max_x + 1) * base_side, (max_y + 1) * base_side, base_height])
+    bottom_base_width_constant = (max_x + 1.1)
+    bottom_base_height_constant = (max_y + 1.1)
+
+    bottom_base = trimesh.creation.box(extents=[(bottom_base_width_constant) * base_side, (bottom_base_height_constant) * base_side, base_height])
     bottom_base.visual.face_colors = [255, 255, 255, 255]
     bottom_base.apply_translation([max_x * 5, max_y * 5, 0])
 
     combined_model_with_base = trimesh.util.concatenate([combined_model, bottom_base])
 
     # Building the walls
-    small_wall_height = 0.4
+    small_wall_height = 0.15
     small_wall_thickness = 0.5
     small_inside_wall = trimesh.creation.box(
-        extents=[((max_x + 1) * base_side), ((max_y + 1) * base_side), (base_height + small_wall_height)])
+        extents=[((bottom_base_width_constant) * base_side), ((bottom_base_height_constant) * base_side), (base_height + small_wall_height)])
     small_outside_wall = trimesh.creation.box(
-        extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+        extents=[((bottom_base_width_constant) * base_side + small_wall_thickness), ((bottom_base_height_constant) * base_side + small_wall_thickness),
                  (base_height + small_wall_height)])
     small_wall = small_outside_wall.difference(small_inside_wall)
     small_wall.apply_translation(
         [max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + small_wall_height) / 2)])
 
     dist_big_small = 2.5
-    bottom_outer = trimesh.creation.box(extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
-                                                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+    bottom_outer = trimesh.creation.box(extents=[((bottom_base_width_constant) * base_side + small_wall_thickness + dist_big_small),
+                                                 ((bottom_base_height_constant) * base_side + small_wall_thickness + dist_big_small),
                                                  base_height])
     bottom_inner = trimesh.creation.box(
-        extents=[((max_x + 1) * base_side + small_wall_thickness), ((max_y + 1) * base_side + small_wall_thickness),
+        extents=[((bottom_base_width_constant) * base_side + small_wall_thickness), ((bottom_base_height_constant) * base_side + small_wall_thickness),
                  base_height])
     bottom = bottom_outer.difference(bottom_inner)
     bottom.visual.face_colors = [255, 255, 255, 255]
@@ -437,12 +444,12 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
     big_wall_height = 2.4
     big_wall_thickness = 1
     big_inside_wall = trimesh.creation.box(
-        extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small),
-                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small),
+        extents=[((bottom_base_width_constant) * base_side + small_wall_thickness + dist_big_small),
+                 ((bottom_base_height_constant) * base_side + small_wall_thickness + dist_big_small),
                  (base_height + big_wall_height)])
     big_outside_wall = trimesh.creation.box(
-        extents=[((max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
-                 ((max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+        extents=[((bottom_base_width_constant) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
+                 ((bottom_base_height_constant) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness),
                  (base_height + big_wall_height)])
     big_wall = big_outside_wall.difference(big_inside_wall)
     big_wall.apply_translation([max_x * 5, max_y * 5, abs(base_height / 2 - (base_height + big_wall_height) / 2)])
@@ -453,8 +460,8 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
     combined_model_with_base = trimesh.util.concatenate([combined_model_with_base, walls])
 
     biggest_bottom_box = trimesh.creation.box(
-        extents=[(max_x + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
-                 (max_y + 1) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+        extents=[(bottom_base_width_constant) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
+                 (bottom_base_height_constant) * base_side + small_wall_thickness + dist_big_small + big_wall_thickness,
                  1.4])
     biggest_bottom_box.apply_translation([max_x * 5, max_y * 5, -1.2])
     combined_model_with_base = trimesh.util.concatenate([combined_model_with_base, biggest_bottom_box])
