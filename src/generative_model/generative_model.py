@@ -45,7 +45,7 @@ class GenerativeModel:
         self.plot_bool = plot_bool
         self.print_iteration = print_iteration
 
-        self.check_input_feasibility()
+        self.selected_group = self.check_input_feasibility()
 
     def check_input_feasibility(self):
         # find the group with given width, height and fillet radius
@@ -67,6 +67,8 @@ class GenerativeModel:
                    f" the given width ({self.width}), height ({self.height}) and"
                    f" fillet radius ({self.fillet_radius}). The given desired resistance is {self.desired_resistance}.")
             raise ValueError(msg)
+
+        return selected_group
 
     def generate_maze(self):
         costs = []
@@ -95,10 +97,15 @@ class GenerativeModel:
         Initializes the maze by generating a random maze and calculating its fitness.
         :return: random_maze: The randomly generated maze.
         """
+        path_finding_mode = "random"
+
+        # if desired resistance is greater than lower bound by 20%, set the path finding mode to "shortest"
+        if self.desired_resistance <= self.selected_group["lb"] * (1 + 0.2):
+            path_finding_mode = "shortest"
 
         random_maze = random_maze_generator(side_length=self.side_length,
                                             target_loc_mode=self.target_loc_mode,
-                                            path_finding_mode="random")
+                                            path_finding_mode=path_finding_mode)
 
         fitness, _ = self.fitness_function(random_maze)
         return random_maze, fitness
