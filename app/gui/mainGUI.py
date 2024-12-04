@@ -84,10 +84,6 @@ class Main_Section:
             self.show_error_popup("No entry pressures found")
             return
 
-        if not flow_rate_calculators:
-            self.show_error_popup("No flow rate calculators found")
-            return
-
         if not exit_pressures:
             self.show_error_popup("No exit pressures found")
             return
@@ -350,7 +346,7 @@ class Main_Section:
                                                              fillet_radius=pipe_fillet_radius,
                                                              step_size_factor=cell_step_size_factor,
                                                              side_length=cell_side_length,
-                                                             time_limit=60)
+                                                             time_limit=3)
 
             all_cell_locs_and_types = self.resistance_dict[key]
             for cell_loc_type in all_cell_locs_and_types:

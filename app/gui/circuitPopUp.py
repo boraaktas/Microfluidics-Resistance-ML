@@ -28,7 +28,7 @@ class CircuitPopup:
         most_upper_row = min([cell_loc[0] for cell_loc in self.ALL_GENERATED_COMPONENTS.keys()])
         most_left_col = min([cell_loc[1] for cell_loc in self.ALL_GENERATED_COMPONENTS.keys()])
 
-        # Update the dict according to the most upper row, most lower row, most left col, most right col
+        # Update the dict according to the most upper row, lowest row, most left col, most right col
         updated_dict = {}
         for cell_loc in self.ALL_GENERATED_COMPONENTS.keys():
             row, col = cell_loc
@@ -151,13 +151,59 @@ class CircuitPopup:
         scrollable_panel_frame.grid_columnconfigure(0, weight=1)
         scrollable_panel_frame.grid_columnconfigure(1, weight=1)
 
+        title_selected_groups_font = ("Arial", 16, "bold")
+        title_selected_groups_label = ttk.Label(scrollable_panel_frame,
+                                                text="Selected Pipe Features",
+                                                font=title_selected_groups_font)
+        title_selected_groups_label.grid(row=0, column=0, columnspan=2, pady=(5, 5), sticky="n")
+        # if it is a START, display the pipe features
+        row_index = 1
+        for i, cell_loc in enumerate(self.updated_dict.keys()):
+            table_loc = (cell_loc[0] + self.most_upper_row, cell_loc[1] + self.most_left_col)
+
+            if self.table_obj.table[table_loc[0]][table_loc[1]].tile_type in Constants.STARTER_TYPES:
+                cell_res_matrix, cell_fig, pipe_width, pipe_height, pipe_fillet_radius, cell_type, cell_coming_dir = \
+                    self.updated_dict[cell_loc]
+
+                # Display the cell location
+                ttk.Label(scrollable_panel_frame, text=f"Circuit Pipe That Starts at Cell"
+                                                       f" {cell_loc}:").grid(row=row_index,
+                                                                             column=0,
+                                                                             columnspan=2,
+                                                                             sticky="w",
+                                                                             padx=10)
+                row_index += 1
+
+                # Display the pipe features of the circuit: width, height, fillet radius
+                ttk.Label(scrollable_panel_frame, text=f"PipeWidth: {pipe_width:.2f} mm").grid(row=row_index,
+                                                                                        column=0,
+                                                                                        columnspan=2,
+                                                                                        sticky="w",
+                                                                                        padx=10)
+                row_index += 1
+                ttk.Label(scrollable_panel_frame, text=f"Pipe Height: {pipe_height:.2f} mm").grid(row=row_index,
+                                                                                               column=0,
+                                                                                               columnspan=2,
+                                                                                               sticky="w",
+                                                                                               padx=10)
+                row_index += 1
+                ttk.Label(scrollable_panel_frame, text=f"Fillet Radius: {pipe_fillet_radius:.2f} mm").grid(row=row_index,
+                                                                                                       column=0,
+                                                                                                       columnspan=2,
+                                                                                                       sticky="w",
+                                                                                                       padx=10)
+                row_index += 1
+
+                ttk.Separator(scrollable_panel_frame, orient='horizontal').grid(row=row_index, column=0, columnspan=2,
+                                                                                sticky="ew", pady=5)
+                row_index += 1
+
         # Centered and styled Flow Rates title with no extra padding
         title_font = ("Arial", 16, "bold")
         title_label = ttk.Label(scrollable_panel_frame, text="Flow Rates", font=title_font)
-        title_label.grid(row=0, column=0, columnspan=2, pady=(5, 5), sticky="n")
+        title_label.grid(row=row_index, column=0, columnspan=2, pady=(5, 5), sticky="n")
 
-        # Assuming you have a way to retrieve the desired and generated flow rates for each cell
-        row_index = 1
+        row_index += 1
         for i, cell_loc in enumerate(self.updated_dict.keys()):
             table_loc = (cell_loc[0] + self.most_upper_row, cell_loc[1] + self.most_left_col)
 
