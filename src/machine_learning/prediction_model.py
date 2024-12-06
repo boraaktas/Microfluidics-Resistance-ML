@@ -1,8 +1,7 @@
 import os
-import pickle
-
-import numpy as np
+import joblib
 import pandas as pd
+import numpy as np
 
 
 class PredictionModel:
@@ -52,7 +51,7 @@ class PredictionModel:
     @staticmethod
     def load_base_learners(base_learners_pickle_path: str) -> dict:
         """
-        Loads the base learners from the pickle files in the given path.
+        Loads the base learners from the joblib files in the given path.
 
         :param base_learners_pickle_path: The path where the base learners are saved.
         :return: base_learners_dict: A dictionary that contains the base learners. The key is the model name and,
@@ -61,9 +60,9 @@ class PredictionModel:
 
         base_learners_dict: dict[str, object] = {}
         for file in os.listdir(base_learners_pickle_path):
-            if file.endswith('.pkl'):
+            if file.endswith('.joblib'):
                 current_model_name: str = file.split('.')[0]
-                current_model = pickle.load(open(base_learners_pickle_path + file, 'rb'))
+                current_model = joblib.load(base_learners_pickle_path + file)
 
                 base_learners_dict[current_model_name] = current_model
 
@@ -72,30 +71,29 @@ class PredictionModel:
     @staticmethod
     def load_meta_learner(meta_learner_pickle_path: str) -> tuple:
         """
-        Loads the meta learner from the pickle file in the given path.
+        Loads the meta learner from the joblib file in the given path.
 
         :param meta_learner_pickle_path: The path where the meta learner is saved.
         :return: meta_learner: The meta learner model.
         """
 
-        # if there is more than one pickle file and one txt file in the given path, raise an error
-        if len(os.listdir(meta_learner_pickle_path)) > 2:
-            raise ValueError('There is more than one pickle file in the given path. '
-                             'Please provide the path to the exact pickle file.')
+        # if there is more than one joblib file and one txt file in the given path, raise an error
+        if len([f for f in os.listdir(meta_learner_pickle_path) if f.endswith('.joblib')]) != 1:
+            raise ValueError('There is more than one joblib file in the given path. '
+                             'Please provide the path to the exact joblib file.')
 
         pickle_file_path = None
         for file in os.listdir(meta_learner_pickle_path):
-            if file.endswith('.pkl'):
+            if file.endswith('.joblib'):
                 pickle_file_path = file
 
         meta_learner_name = pickle_file_path.split('.')[0]
-        meta_learner = pickle.load(open(meta_learner_pickle_path + pickle_file_path, 'rb'))
+        meta_learner = joblib.load(meta_learner_pickle_path + pickle_file_path)
 
         return meta_learner_name, meta_learner
 
     @staticmethod
     def load_base_learner_features(base_learners_pickle_path: str) -> list[str]:
-
         base_learner_features = []
         # from the txt file in the path, get the feature names
         with open(base_learners_pickle_path + 'base_learner_features.txt', 'r') as f:
@@ -106,7 +104,6 @@ class PredictionModel:
 
     @staticmethod
     def load_meta_learner_features(meta_learner_pickle_path: str) -> list[str]:
-
         meta_learner_features = []
         # from the txt file in the path, get the feature names
         with open(meta_learner_pickle_path + 'meta_learner_features.txt', 'r') as f:
