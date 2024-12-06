@@ -37,9 +37,8 @@ def load_meshes():
     # Load meshes
     stl_path = resource_path('data/STL/')
     meshes = {}
-    # Read all the files in the STL folder and load them into the dictionary. File' name is the key and
-    # the mesh object is the value
-
+    # Read all the files in the STL folder and load them into the dictionary.
+    # File' name is the key and the mesh object is the value
     for file in os.listdir(stl_path):
         if file.endswith(".STL"):
             meshes[file] = trimesh.load(stl_path + file)
@@ -61,7 +60,10 @@ def load_res_bounds():
 
 def load_prediction_model():
     # Load the prediction model from the pickle file
-    prediction_model = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
-                                       meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
+    base_learners_pickle_path = resource_path('drive_data/pickles/base_learner_pickles/')
+    meta_learner_pickle_path = resource_path('drive_data/pickles/meta_learner_pickles/')
+
+    prediction_model = PredictionModel(base_learners_pickle_path=base_learners_pickle_path,
+                                       meta_learner_pickle_path=meta_learner_pickle_path)
 
     return prediction_model

@@ -8,8 +8,8 @@ import pandas as pd
 class PredictionModel:
 
     def __init__(self,
-                 base_learners_pickle_path: str,
-                 meta_learner_pickle_path: str):
+                 base_learners_pickle_path,
+                 meta_learner_pickle_path):
 
         self.base_learners_dict: dict = PredictionModel.load_base_learners(base_learners_pickle_path)
         self.base_learner_features: list[str] = PredictionModel.load_base_learner_features(base_learners_pickle_path)
