@@ -9,10 +9,11 @@ from src.modelling_3D import build_whole_circuit
 
 
 class CircuitPopup:
-    def __init__(self, root, ALL_GENERATED_COMPONENTS, table_obj):
+    def __init__(self, root, ALL_GENERATED_COMPONENTS, table_obj, mesh_dict):
         self.root = root
         self.ALL_GENERATED_COMPONENTS = ALL_GENERATED_COMPONENTS
         self.table_obj = table_obj
+        self.mesh_dict = mesh_dict
 
         self.toggle_base_checkbox_var = tk.BooleanVar()
 
@@ -64,7 +65,9 @@ class CircuitPopup:
             images[(row, col)] = img
 
         # Create 3D models
-        combined_model, combined_model_with_base = build_whole_circuit(dict_for_3d_model, show_model=False)
+        combined_model, combined_model_with_base = build_whole_circuit(dict_for_3d_model,
+                                                                       mesh_dict=self.mesh_dict,
+                                                                       show_model=False)
 
         return images, combined_model, combined_model_with_base, updated_dict, most_upper_row, most_left_col
 

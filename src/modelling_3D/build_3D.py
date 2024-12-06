@@ -200,8 +200,8 @@ def build_3d_cell_maze(maze: np.ndarray,
 def import_stl(cell_type_str: str,
                coming_direction: Optional[str],
                width: float,
-               height: float) -> trimesh.Trimesh:
-    stl_folder = 'data/STL/'
+               height: float,
+               mesh_dict: dict) -> trimesh.Trimesh:
 
     file_cell_type_str = ""
     file_type_str = ""
@@ -243,16 +243,17 @@ def import_stl(cell_type_str: str,
 
     width_height_str = f"w{int(width * 100)}_h{int(height * 100)}"
 
+    stl_key = ""
     if file_type_str == "":
-        file_path = f"{stl_folder}{file_cell_type_str}_{width_height_str}.STL"
+        stl_key = f"{file_cell_type_str}_{width_height_str}.STL"
     else:
         if division_symmetric == "":
-            file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{width_height_str}.STL"
+            stl_key = f"{file_cell_type_str}_{file_type_str}_{width_height_str}.STL"
         elif division_symmetric == "symmetric":
-            file_path = f"{stl_folder}{file_cell_type_str}_{file_type_str}_{division_symmetric}_{width_height_str}.STL"
+            stl_key = f"{file_cell_type_str}_{file_type_str}_{division_symmetric}_{width_height_str}.STL"
 
     # Load the mesh from the file path to the origin (0, 0, 0) of the world
-    mesh = trimesh.load_mesh(file_path)
+    mesh = mesh_dict[stl_key]
 
     # Copy the mesh to avoid modifying the original
     mesh_rotated = mesh.copy()
@@ -328,6 +329,7 @@ def import_stl(cell_type_str: str,
 
 
 def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
+                        mesh_dict: dict,
                         show_model: bool = False) -> tuple[trimesh.Trimesh, trimesh.Trimesh]:
 
     # Constants
@@ -371,7 +373,8 @@ def build_whole_circuit(DICT_FOR_3D_MODEL: dict,
                     imported_component = import_stl(cell_type_str=cell_type_str,
                                                     coming_direction=str(cell_coming_dir),
                                                     width=pipe_width,
-                                                    height=pipe_height)
+                                                    height=pipe_height,
+                                                    mesh_dict=mesh_dict)
 
                     imported_component.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2,
                                                                                                [1, 0, 0]))

@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import trimesh
 
 from PIL import Image, ImageTk
 
@@ -30,6 +31,20 @@ def load_images():
         images[i] = (ImageTk.PhotoImage(image), image)
 
     return images
+
+
+def load_meshes():
+    # Load meshes
+    stl_path = resource_path('data/STL/')
+    meshes = {}
+    # Read all the files in the STL folder and load them into the dictionary. File' name is the key and
+    # the mesh object is the value
+
+    for file in os.listdir(stl_path):
+        if file.endswith(".STL"):
+            meshes[file] = trimesh.load(stl_path + file)
+
+    return meshes
 
 
 def load_res_bounds():

@@ -5,8 +5,9 @@ import numpy as np
 import ttkbootstrap as ttk
 from matplotlib import pyplot as plt
 
-from app.utils import (load_images, load_res_bounds, load_prediction_model,
+from app.utils import (load_images, load_res_bounds, load_prediction_model, load_meshes,
                        R_calculator, Q_calculator, ResistanceGenerator, Constants, Table, Tile, TileType)
+
 from src.maze_functions import plot_other_components
 from .circuitPopUp import CircuitPopup
 from .menuGUI import Menu_Section
@@ -32,6 +33,7 @@ class Main_Section:
         self.images = load_images()
         self.res_bounds = load_res_bounds()
         self.prediction_model = load_prediction_model()
+        self.mesh_dict = load_meshes()
 
         self.table_length = length
         self.table_width = width
@@ -380,5 +382,5 @@ class Main_Section:
             popup.destroy()
 
         circuit_popup = CircuitPopup(root=self.root, ALL_GENERATED_COMPONENTS=ALL_GENERATED_COMPONENTS,
-                                     table_obj=self.table_obj)
+                                     table_obj=self.table_obj, mesh_dict=self.mesh_dict)
         circuit_popup.open_circuit_popup()
