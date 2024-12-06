@@ -11,8 +11,8 @@ from src import PredictionModel
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        # PyInstaller creates a temp folder and stores path in _MEIPASS2
+        base_path = sys._MEIPASS2
     except Exception as e:
         print(e)
         base_path = os.path.abspath(".")
