@@ -349,7 +349,7 @@ class Main_Section:
                                                              fillet_radius=pipe_fillet_radius,
                                                              step_size_factor=cell_step_size_factor,
                                                              side_length=cell_side_length,
-                                                             time_limit=10,
+                                                             time_limit=120,
                                                              iteration_limit=50)
 
             all_cell_locs_and_types = self.resistance_dict[key]
