@@ -28,6 +28,7 @@ class GenerativeModel:
                  method: Optional[str],
                  side_length: float,
                  time_limit: float,
+                 iteration_limit: int,
                  plot_bool: bool = False,
                  print_iteration: bool = False
                  ):
@@ -42,6 +43,7 @@ class GenerativeModel:
         self.method = method
         self.side_length = side_length
         self.time_limit = time_limit
+        self.iteration_limit = iteration_limit
         self.plot_bool = plot_bool
         self.print_iteration = print_iteration
 
@@ -79,6 +81,7 @@ class GenerativeModel:
                                   tabu_size=10,
                                   num_neighbors=50,
                                   time_limit=self.time_limit,
+                                  ITER=self.iteration_limit,
                                   plot_best_solution=self.plot_bool,
                                   print_iteration=self.print_iteration,
                                   print_results=True)

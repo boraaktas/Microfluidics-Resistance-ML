@@ -26,7 +26,8 @@ class ResistanceGenerator:
                             fillet_radius: float,
                             step_size_factor: float,
                             side_length: float,
-                            time_limit: float) -> tuple[np.ndarray, float]:
+                            time_limit: float,
+                            iteration_limit: int) -> tuple[np.ndarray, float]:
         """
         Generates a cell resistance matrix for the given parameters.
 
@@ -39,6 +40,7 @@ class ResistanceGenerator:
         :param step_size_factor: The step size factor of the path.
         :param side_length: The side length of the cell.
         :param time_limit: The time limit for the optimization model.
+        :param iteration_limit: The iteration limit for the optimization model.
 
         :return: cell_resistance: The cell resistance matrix of the maze.
         :return: cell_resistance_value: The predicted resistance value of the maze.
@@ -54,7 +56,8 @@ class ResistanceGenerator:
                                            target_loc_mode=target_loc_mode,
                                            method="TS",
                                            side_length=side_length,
-                                           time_limit=time_limit)
+                                           time_limit=time_limit,
+                                           iteration_limit=iteration_limit)
 
         cell_resistance_matrix, _ = generative_model.generate_maze()
         cell_resistance_value = generative_model.predict_resistance(cell_resistance_matrix)
