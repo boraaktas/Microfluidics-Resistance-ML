@@ -6,6 +6,8 @@ from pyomo.environ import ConcreteModel, Var, Objective, SolverFactory, Constrai
 from .constants import Constants
 from .tile_type import TileType
 
+from .helper_functions import resource_path
+
 
 def make_flat_list(circuit):
     flat_list = []
@@ -480,7 +482,8 @@ def calculate_resistance_via_optimization(circuit,
         model.obj = Objective(expr=model.farthest, sense=minimize)
 
     # Solve the model
-    solver = SolverFactory('glpk')
+    solver_path = resource_path('data//solver//glpsol.exe')
+    solver = SolverFactory('glpk', executable=solver_path)
 
     # write the model to a file by using variables with the same name
     # model.write(filename="resistance_calculator.lp", io_options = {"symbolic_solver_labels":True})

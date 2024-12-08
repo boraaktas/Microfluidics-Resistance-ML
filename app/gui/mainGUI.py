@@ -256,7 +256,8 @@ class Main_Section:
                 print("Error: ", e)
                 # print the stack trace
                 traceback.print_exc()
-                self.show_error_popup("Infeasible circuit.\n" + "Each cell resistance should be between 1 and 70.")
+                # error_message_all = str(e)
+                self.show_error_popup("Infeasible circuit.\n")
 
         if success_resistances:
             # close this popup

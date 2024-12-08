@@ -53,6 +53,10 @@ class Tile:
         self.flow_rate_in_this_cell = None
         self.pressure_in_this_cell = None
         self.selected_comb_for_tile = None
+        self.coming_direction = None
+        self.going_directions = None
+        self.generated_resistance_in_this_cell = None
+        self.generated_flow_rate_in_this_cell = None
 
     def set_tile_type(self, tile_type: TileType):
         print(f"{self.tile_type} -> {tile_type}")

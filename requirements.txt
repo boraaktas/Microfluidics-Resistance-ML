@@ -3,6 +3,7 @@
 
 # activate the virtual environment
 # source venv/bin/activate
+# .\venv\Scripts\activate
 
 # make sure that you are working in venv
 
@@ -16,17 +17,19 @@ jupyter==1.0.0
 lazypredict==0.2.12  # IMPORTANT: from Supervised.py line 98 change 'sparse=False' to 'sparse_output=False'
 matplotlib==3.9.0
 pandas==2.2.2
-numpy==1.24.3
+numpy==1.26.4
 scikit-learn==1.5.0
 
-trimesh~=4.4.3  # pip install numpy trimesh numpy-stl
+trimesh~=4.5.3  # pip install numpy trimesh numpy-stl
 pyglet~=1.5.29  # pip install pyglet==2.0.16, pip install "pyglet<2"
 manifold3d~=2.5.1
 
 ttkbootstrap==1.10.1
 pillow==10.4.0
 cplex==22.1.1.2
-pyomo==6.7.3
-glpk==0.4.8  # conda install glpk
+pyomo==6.8.2
+# conda install glpk
 shapely==2.0.5
 plotly==5.24.1
+
+joblib==1.4.2
