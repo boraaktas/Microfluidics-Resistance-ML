@@ -7,6 +7,7 @@ from .constants import Constants
 from .tile_type import TileType
 
 from .helper_functions import resource_path
+import platform
 
 
 def make_flat_list(circuit):
@@ -481,9 +482,13 @@ def calculate_resistance_via_optimization(circuit,
     elif obj_type.startswith("farthest"):
         model.obj = Objective(expr=model.farthest, sense=minimize)
 
-    # Solve the model
-    solver_path = resource_path('data//solver//glpsol.exe')
-    solver = SolverFactory('glpk', executable=solver_path)
+    # if the current system is windows then use the glpsol.exe solver
+    # otherwise use the default solver
+    if platform.system() == "Windows":
+        solver_path = resource_path('data//solver//glpsol.exe')
+        solver = SolverFactory('glpk', executable=solver_path)
+    else:
+        solver = SolverFactory('glpk')
 
     # write the model to a file by using variables with the same name
     # model.write(filename="resistance_calculator.lp", io_options = {"symbolic_solver_labels":True})

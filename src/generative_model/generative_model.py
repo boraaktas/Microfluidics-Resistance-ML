@@ -80,7 +80,8 @@ class GenerativeModel:
                                   num_neighbors=50,
                                   time_limit=self.time_limit,
                                   plot_best_solution=self.plot_bool,
-                                  print_iteration=self.print_iteration)
+                                  print_iteration=self.print_iteration,
+                                  print_results=True)
 
         elif self.method is None:
             solution = self.initialization()
