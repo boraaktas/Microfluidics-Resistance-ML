@@ -1,17 +1,19 @@
 import copy
+import random
+import time
+from typing import Callable
 from typing import Optional
 
 import numpy as np
 
 from src.machine_learning import PredictionModel
+from src.maze_functions import plot_maze, pretty_print_maze
 from src.maze_functions import (random_maze_generator,
                                 extract_features,
                                 get_coord_list_matrix,
                                 get_coord_corners_list,
                                 destruct_maze,
                                 repair_maze)
-from .simulated_annealing import SA
-from .tabu_search import TS
 
 
 class GenerativeModel:
@@ -63,7 +65,7 @@ class GenerativeModel:
             raise ValueError("The given width, height and fillet radius combination is not valid.")
 
         # check if the desired resistance is in the range
-        if not selected_group["lb"]*0.999 <= self.desired_resistance <= selected_group["ub"]*1.001:
+        if not selected_group["lb"] * 0.999 <= self.desired_resistance <= selected_group["ub"] * 1.001:
             msg = (f"The desired resistance should be in the range of "
                    f"[{selected_group['lb']}, {selected_group['ub']}] for"
                    f" the given width ({self.width}), height ({self.height}) and"
@@ -73,26 +75,17 @@ class GenerativeModel:
         return selected_group
 
     def generate_maze(self):
-        costs = []
-        if self.method == "TS":
-            solution, costs = TS(init_method=self.initialization,
-                                  N_List=[self.N1, self.N2],
-                                  objective_method=self.fitness_function,
-                                  tabu_size=10,
-                                  num_neighbors=50,
-                                  time_limit=self.time_limit,
-                                  ITER=self.iteration_limit,
-                                  plot_best_solution=self.plot_bool,
-                                  print_iteration=self.print_iteration,
-                                  print_results=True)
 
-        elif self.method is None:
-            solution = self.initialization()
-
-        else:
-            raise ValueError("method should be either 'TS' or 'SA' or None")
-
-        maze, feasibility = solution
+        maze_and_fitness, costs = GenerativeModel.tabu_search(init_method=self.initialization,
+                                                  neighbor_func_list=[self.N1, self.N2],
+                                                  tabu_size=10,
+                                                  neighborhood_size=50,
+                                                  time_limit=self.time_limit,
+                                                  iter_limit=self.iteration_limit,
+                                                  plot_best_solution=self.plot_bool,
+                                                  print_iteration=self.print_iteration,
+                                                  print_results=True)
+        maze = maze_and_fitness[0]
 
         return maze, costs
 
@@ -111,7 +104,7 @@ class GenerativeModel:
                                             target_loc_mode=self.target_loc_mode,
                                             path_finding_mode=path_finding_mode)
 
-        fitness, _ = self.fitness_function(random_maze)
+        fitness = self.fitness_function(random_maze)
         return random_maze, fitness
 
     def predict_resistance(self,
@@ -127,7 +120,7 @@ class GenerativeModel:
         return resistance
 
     def fitness_function(self,
-                         maze: np.ndarray) -> tuple[float, bool]:
+                         maze: np.ndarray) -> float:
         resistance = self.predict_resistance(maze=maze)
 
         diff_res = self.desired_resistance - resistance
@@ -139,7 +132,7 @@ class GenerativeModel:
         fitness = (abs(diff_res) / self.desired_resistance) * 100
         # fitness = abs(diff_res)
 
-        return fitness, True
+        return fitness
 
     @staticmethod
     def normalize_weights(weights: list[float]) -> list[float]:
@@ -161,7 +154,7 @@ class GenerativeModel:
         new_maze, move = self.destruct_repair_between_two_points(current_sol,
                                                                  selection_mode,
                                                                  repair_mode)
-        fitness, _ = self.fitness_function(new_maze)
+        fitness = self.fitness_function(new_maze)
 
         return (new_maze, fitness), move
 
@@ -183,7 +176,7 @@ class GenerativeModel:
                                                                                     selection_mode,
                                                                                     destruct_mode,
                                                                                     repair_mode)
-        fitness, _ = self.fitness_function(new_maze)
+        fitness = self.fitness_function(new_maze)
 
         return (new_maze, fitness), move
 
@@ -336,3 +329,159 @@ class GenerativeModel:
             raise ValueError("selection_mode should be either 'from_lines' or 'from_corners'")
 
         return random_index
+
+    @staticmethod
+    def tabu_search(init_method: Callable,
+                    neighbor_func_list: list[Callable],
+                    tabu_size: int = 15,
+                    neighborhood_size: int = 100,
+                    time_limit: float = 1000,
+                    iter_limit: int = 1000000,
+                    print_iteration: bool = False,
+                    print_results: bool = False,
+                    plot_best_solution: bool = False):
+
+        # Initialize
+        S_initial: tuple[list, float] = init_method()
+        start_time = time.time()
+
+        cost_initial: float = S_initial[1]
+
+        # Current and best solutions
+        S_current = (S_initial[0].copy(), cost_initial)
+        cost_current: float = cost_initial
+
+        S_best = (S_current[0].copy(), cost_current)
+        cost_best: float = cost_current
+        best_time: float = start_time
+        best_iter: int = 0
+
+        solutions: list = [S_current]
+        solution_costs: list[float] = [cost_current]
+
+        # Tabu list
+        tabu_list: list = []
+
+        iteration = 0
+        while True:
+            # Check termination conditions
+            if iteration >= iter_limit:
+                break
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= time_limit:
+                break
+            if cost_best <= 0.5:
+                break
+
+            # Generate neighbors
+            neighbors = []
+            moves = []
+            for _ in range(neighborhood_size):
+                rand_idx = random.choices(range(len(neighbor_func_list)),
+                                          weights=[1 / len(neighbor_func_list)] * len(neighbor_func_list))[0]
+                neighbor_func = neighbor_func_list[rand_idx]
+                neighbor, move = neighbor_func(S_current)
+                neighbors.append(neighbor)
+                moves.append((neighbor_func.__name__, move))
+
+            costs: list[float] = []
+            for neighbor in neighbors:
+                neighbor_objective = neighbor[1]
+                costs.append(neighbor_objective)
+
+            neighbors_and_moves = sorted(zip(costs, neighbors, moves),
+                                         key=lambda x: x[0])
+
+            best_neighbor_found: bool = False
+            best_neighbor_cost: float = neighbors_and_moves[0][0]
+            best_neighbor_solution = neighbors_and_moves[0][1]
+            best_neighbor_move: tuple = neighbors_and_moves[0][2]
+
+            # Find best neighbor that is not tabu or satisfies aspiration
+            index = 0
+            while not best_neighbor_found and index < len(neighbors_and_moves):
+                c_cost = neighbors_and_moves[index][0]
+                c_sol = neighbors_and_moves[index][1]
+                c_mv = neighbors_and_moves[index][2]
+
+                # Check if move is tabu
+                in_tabu_list = False
+                for t in tabu_list:
+                    if t[0] == c_mv[0] and t[1] == c_mv[1]:
+                        in_tabu_list = True
+                        break
+
+                meets_aspiration_criteria = False
+                if in_tabu_list:
+                    # Aspiration criteria
+                    if c_cost < cost_best:
+                        # Remove from tabu
+                        if c_mv in tabu_list:
+                            tabu_list.remove(c_mv)
+                        meets_aspiration_criteria = True
+
+                if (not in_tabu_list) or meets_aspiration_criteria:
+                    best_neighbor_found = True
+                    best_neighbor_cost = c_cost
+                    best_neighbor_solution = c_sol
+                    best_neighbor_move = c_mv
+
+                index += 1
+
+            # If no best neighbor found, stick to current
+            if not best_neighbor_found:
+                best_neighbor_cost = cost_current
+                best_neighbor_solution = (S_current[0].copy(), cost_current)
+                best_neighbor_move = ('None', ())
+
+            S_current = (best_neighbor_solution[0].copy(), best_neighbor_cost)
+            cost_current = best_neighbor_cost
+
+            # Update tabu list
+            tabu_list.append(best_neighbor_move)
+            if len(tabu_list) == tabu_size:
+                tabu_list.pop(0)
+
+            solutions.append(S_current)
+            solution_costs.append(cost_current)
+
+            # Update best solution
+            if cost_current < cost_best:
+                S_best = (S_current[0].copy(), cost_current)
+                cost_best = cost_current
+                best_time = time.time() - start_time
+                best_iter = iteration
+
+                if plot_best_solution:
+                    plot_maze(S_best[0])
+
+            if print_iteration:
+                print("\n--------------------------------------------------")
+                print(f"Time elapsed: {elapsed_time:.2f}/{time_limit}")
+                print(f"Iteration: {iteration}/{iter_limit}")
+                print(f"Current cost: {cost_current:.4f}")
+                print("Current solution:")
+                pretty_print_maze(S_current[0])
+                print(f"Best cost: {cost_best:.4f}")
+                print("Best solution:")
+                pretty_print_maze(S_best[0])
+                print("--------------------------------------------------\n")
+
+            iteration += 1
+
+        time_elapsed = time.time() - start_time
+
+        if print_results:
+            print("-------------------- RESULTS --------------------")
+            print("Tabu size:", tabu_size)
+            print("Number of neighbors:", neighborhood_size)
+            print(f"Time elapsed: {time_elapsed:.2f}/{time_limit}")
+            print(f"Iterations: {iteration}/{iter_limit}")
+            print(f"Best time: {best_time:.2f}")
+            print("Best iteration:", best_iter)
+            print(f"Best cost: {cost_best:.4f}")
+            print("Best solution:")
+            pretty_print_maze(S_best[0])
+            print("--------------------------------------------------\n")
+
+        return S_best, solution_costs

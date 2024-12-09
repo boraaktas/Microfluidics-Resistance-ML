@@ -26,8 +26,8 @@ def random_maze():
                               width=WIDTH, height=HEIGHT, fillet_radius=FILLET_RADIUS)
     maze.show()
 
-    PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
-                                       meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
+    PREDICTION_MODEL = PredictionModel(base_learners_pickle_path='data/pickles/base_learner_pickles/',
+                                       meta_learner_pickle_path='data/pickles/meta_learner_pickles/')
 
     RANDOM_MAZE_RESISTANCE = PREDICTION_MODEL.predict(FEATURES_DICT)
     print(f"The prediction resistance of the random maze is: {RANDOM_MAZE_RESISTANCE}")
@@ -36,15 +36,15 @@ def random_maze():
 
 
 def generate_desired_maze():
-    prediction_model = PredictionModel(base_learners_pickle_path='drive_data/pickles/base_learner_pickles/',
-                                       meta_learner_pickle_path='drive_data/pickles/meta_learner_pickles/')
+    prediction_model = PredictionModel(base_learners_pickle_path='data/pickles/base_learner_pickles/',
+                                       meta_learner_pickle_path='data/pickles/meta_learner_pickles/')
     with open('data/resistance_bounds.pkl', 'rb') as f:
         resistance_bounds = pickle.load(f)
 
     STEP_SIZE_FACTOR = 0.5
     SIDE_LENGTH = 20
 
-    DESIRED_RESISTANCE = 30
+    DESIRED_RESISTANCE = 8
     WIDTH = 0.05
     HEIGHT = 0.05
     FILLET_RADIUS = 0.04
@@ -52,7 +52,8 @@ def generate_desired_maze():
     TARGET_LOC_MODE = "north"  # east or north
     METHOD = "TS"  # TS or SA or None
 
-    TIME_LIMIT = 30
+    TIME_LIMIT = 120
+    ITERATION_LIMIT = 50
 
     generative_model = GenerativeModel(prediction_model=prediction_model,
                                        resistance_bounds_dict=resistance_bounds,
@@ -65,6 +66,7 @@ def generate_desired_maze():
                                        method=METHOD,
                                        side_length=SIDE_LENGTH,
                                        time_limit=TIME_LIMIT,
+                                       iteration_limit=ITERATION_LIMIT,
                                        plot_bool=True,
                                        print_iteration=True)
 
