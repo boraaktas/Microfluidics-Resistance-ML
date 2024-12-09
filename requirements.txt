@@ -1,47 +1,38 @@
-# create a virtual environment named venv
-# python3 -m venv venv
-
-# activate the virtual environment
-# source venv/bin/activate
-# .\venv\Scripts\activate
-
-# make sure that you are working in venv
-
+# use python 3.11.0
+# create a conda environment
+# conda create -n myenv python=3.11.0
+# activate the environment
+# conda activate myenv
 # upgrade pip
 # pip install --upgrade pip
-
 # install the required packages
 # pip install -r requirements.txt
+# for my glpk solver, use the following command
+# conda install glpk
+
+# IMPORTANT: For lazy predict to work, you need to change the 'sparse=False' to 'sparse_output=False' in the Supervised.py file
+# If you can edit the ttkbootstrap library code directly, locate the following line in dialogs.py
+# (line 566):
+# locale.setlocale(locale.LC_ALL, locale.setlocale(locale.LC_TIME, ""))
+# TO:
+# try:
+#     locale.setlocale(locale.LC_ALL, locale.setlocale(locale.LC_TIME, ""))
+# except locale.Error:
+#     locale.setlocale(locale.LC_ALL, 'C')  # Fallback to a generic locale
 
 jupyter==1.0.0
-lazypredict==0.2.12  # IMPORTANT: from Supervised.py line 98 change 'sparse=False' to 'sparse_output=False'
+lazypredict==0.2.12
 matplotlib==3.9.0
 pandas==2.2.2
 numpy==1.26.4
 scikit-learn==1.5.0
-
-trimesh~=4.5.3  # pip install numpy trimesh numpy-stl
-pyglet~=1.5.29  # pip install pyglet==2.0.16, pip install "pyglet<2"
+trimesh~=4.5.3
+pyglet~=1.5.29
 manifold3d~=2.5.1
-
 ttkbootstrap==1.10.1
 pillow==10.4.0
 cplex==22.1.1.2
 pyomo==6.8.2
-# conda install glpk
 shapely==2.0.5
 plotly==5.24.1
-
 joblib==1.4.2
-
-"""
-# Important:
-# If you can edit the ttkbootstrap library code directly, locate the following line in dialogs.py
-# (line 566):
-locale.setlocale(locale.LC_ALL, locale.setlocale(locale.LC_TIME, ""))
-# TO:
-try:
-    locale.setlocale(locale.LC_ALL, locale.setlocale(locale.LC_TIME, ""))
-except locale.Error:
-    locale.setlocale(locale.LC_ALL, 'C')  # Fallback to a generic locale
-"""
