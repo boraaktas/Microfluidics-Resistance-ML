@@ -6,13 +6,20 @@ import trimesh
 from PIL import Image, ImageTk
 
 from src import PredictionModel
+import platform
 
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS2
-        base_path = sys._MEIPASS2
+        # if the system is W.indows and the path is not found, it will try to find the path in _MEIPASS2
+        # if the system is MACOS and the path is not found, it will try to find the path in _MEIPASS
+        if platform.system() == "Windows":
+            base_path = sys._MEIPASS2
+        else:
+            base_path = sys._MEIPASS
+
     except Exception as e:
         print(e)
         base_path = os.path.abspath(".")
