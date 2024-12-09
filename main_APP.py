@@ -1,7 +1,7 @@
+import locale
 import tkinter as tk
 
 from app import Main_Section
-import locale
 
 
 def main():
